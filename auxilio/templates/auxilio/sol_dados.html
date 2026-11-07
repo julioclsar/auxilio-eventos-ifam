@@ -1,0 +1,124 @@
+{% extends "auxilio/sol_base.html" %}
+{% load auxilio_extras %}
+{% block corpo %}
+<form method="post" novalidate data-guardar>{% csrf_token %}
+  {% include "auxilio/_erros_form.html" with nota_envio=True %}
+  <fieldset><legend>Proponente</legend>
+    {% if form.proponente_tipo %}
+      <p class="muted pequeno">O proponente faz o pedido e é o mesmo em todo o processo (Anexos I, II e VI). Pode ser você ou um(a) servidor(a), como o(a) orientador(a) (item 7.1).</p>
+      <div class="campo radios">{{ form.proponente_tipo }}</div>
+      <div class="campos" id="dados-servidor" style="margin-top:.7rem">
+        {% include "auxilio/_campo.html" with f=form.prop_nome %}
+        {% include "auxilio/_campo.html" with f=form.prop_siape %}
+        {% include "auxilio/_campo.html" with f=form.prop_cargo %}
+        {% include "auxilio/_campo.html" with f=form.prop_email %}
+      </div>
+      <p class="ajuda" id="ajuda-servidor">O(a) servidor(a) assina o Anexo I e o Anexo II como proponente. O sistema escreve o e-mail para ele(a).</p>
+    {% else %}
+      <p>Você é o(a) proponente: <strong>{{ sol.proponente.nome }}</strong>{% if sol.proponente.siape %}, SIAPE {{ sol.proponente.siape }}{% endif %}. Inclua os estudantes na aba Estudantes.</p>
+    {% endif %}
+  </fieldset>
+
+  <fieldset><legend>Evento</legend>
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=form.evento_nome larga=True %}
+      {% include "auxilio/_campo.html" with f=form.natureza larga=True %}
+      {% include "auxilio/_campo.html" with f=form.tipo_participacao larga=True %}
+      {% include "auxilio/_campo.html" with f=form.cidade %}
+      {% include "auxilio/_campo.html" with f=form.uf %}
+      {% include "auxilio/_campo.html" with f=form.presencial %}
+    </div>
+  </fieldset>
+
+  <fieldset><legend>Datas</legend>
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=form.evento_inicio %}
+      {% include "auxilio/_campo.html" with f=form.evento_fim %}
+      {% include "auxilio/_campo.html" with f=form.viagem_ida %}
+      {% include "auxilio/_campo.html" with f=form.viagem_volta %}
+      {% include "auxilio/_campo.html" with f=form.justificativa_prazo larga=True %}
+    </div>
+    <p class="ajuda">Ida e retorno se ajustam sozinhos para um dia antes do início e um dia depois do fim do evento, como é o costume do campus. Mude só se a sua viagem for diferente. As diárias de alimentação e de hospedagem são contadas por essas datas.</p>
+  </fieldset>
+
+  <fieldset><legend>Auxílios solicitados</legend>
+    <p class="ajuda" style="margin-top:0">Marque o que vai pedir. Evento virtual ou na cidade do campus só permite o Auxílio-Inscrição (itens 4.4 e 4.5). Não peça o que o evento já oferece (item 4.2).</p>
+
+    <div class="auxilio" data-auxilio="pede_inscricao">
+      {% include "auxilio/_campo.html" with f=form.pede_inscricao %}
+      <p class="explica">Paga a taxa de inscrição do evento.</p>
+      <div class="campos">{% include "auxilio/_campo.html" with f=form.valor_inscricao %}</div>
+    </div>
+
+    <div class="auxilio" data-auxilio="pede_traslado">
+      {% include "auxilio/_campo.html" with f=form.pede_traslado %}
+      <p class="explica">Paga as passagens de ida e volta. O valor vem da aba Orçamentos, pelo menor preço de cada trecho.</p>
+    </div>
+
+    <div class="auxilio" data-auxilio="pede_alimentacao">
+      {% include "auxilio/_campo.html" with f=form.pede_alimentacao %}
+      <p class="explica">Paga {{ regra.diaria|brl }} por dia de viagem e metade, {{ regra.meia|brl }}, no dia da ida e no dia da volta.
+        {% if regra.dias %}<br><strong>Sua viagem, de {{ sol.viagem_ida|data_br }} a {{ sol.viagem_volta|data_br }}, tem {{ regra.dias }} dia{{ regra.dias|pluralize }}</strong>, então são {{ regra.inteiras }} diária{{ regra.inteiras|pluralize }} inteira{{ regra.inteiras|pluralize }} e {{ regra.meias }} meia{{ regra.meias|pluralize }}, {{ regra.total_alim|brl }} por estudante.{% else %}<br>Informe as datas do evento para ver a conta.{% endif %}</p>
+      <p class="ajuda">Deixe em branco para usar essa conta. Só mude se o evento já oferecer refeições em algum dia.</p>
+      <div class="campos">
+        {% include "auxilio/_campo.html" with f=form.alim_inteiras %}
+        {% include "auxilio/_campo.html" with f=form.alim_meias %}
+      </div>
+    </div>
+
+    <div class="auxilio" data-auxilio="pede_hospedagem">
+      {% include "auxilio/_campo.html" with f=form.pede_hospedagem %}
+      <p class="explica">Paga uma diária de hotel por noite fora. O valor vem da aba Orçamentos, pelo menor orçamento de hospedagem.
+        {% if regra.dias %}<br><strong>Sua viagem tem {{ regra.noites }} noite{{ regra.noites|pluralize }}</strong>, então são {{ regra.noites }} diária{{ regra.noites|pluralize }} de hospedagem.{% endif %}</p>
+      <p class="ajuda">Deixe em branco para usar essa conta. Só mude se o evento já oferecer hospedagem em alguma noite.</p>
+      <div class="campos">{% include "auxilio/_campo.html" with f=form.diarias_hospedagem %}</div>
+    </div>
+  </fieldset>
+
+  <fieldset><legend>Quem viaja junto</legend>
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=form.servidor_acompanha larga=True %}
+    </div>
+    <p class="ajuda">Marque se um(a) servidor(a) acompanha os estudantes, seja ou não o proponente. Entram o termo de responsabilidade dele(a) (Anexo IV) e o do Diretor-Geral (Anexo V).</p>
+  </fieldset>
+
+  {% if editavel %}
+  <div class="linha">
+    <button class="btn" type="submit">Salvar</button>
+    <button class="btn sec" type="submit" name="avancar" value="1">Salvar e ir para os estudantes</button>
+  </div>
+  {% else %}<p class="muted">Esta solicitação já foi enviada e não pode mais ser editada.</p>{% endif %}
+</form>
+<script>
+  document.querySelectorAll(".auxilio").forEach(function (bloco) {
+    var marca = bloco.querySelector('input[name="' + bloco.dataset.auxilio + '"]');
+    if (!marca) return;
+    function ver() { bloco.classList.toggle("desmarcado", !marca.checked); }
+    marca.addEventListener("change", ver); ver();
+  });
+  // Ida e retorno acompanham as datas do evento enquanto seguem o padrão (um dia antes e um dia depois).
+  (function () {
+    function dia(v, n) { if (!v) return ""; var d = new Date(v + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+    [["id_evento_inicio", "id_viagem_ida", -1], ["id_evento_fim", "id_viagem_volta", 1]].forEach(function (par) {
+      var ev = document.getElementById(par[0]), vi = document.getElementById(par[1]);
+      if (!ev || !vi) return;
+      var antes = ev.value;
+      ev.addEventListener("change", function () {
+        if (!vi.value || vi.value === dia(antes, par[2])) vi.value = dia(ev.value, par[2]);
+        antes = ev.value;
+      });
+    });
+  })();
+  (function () {
+    var radios = document.querySelectorAll('input[name="proponente_tipo"]');
+    if (!radios.length) return;
+    function mostrar() {
+      var servidor = document.querySelector('input[name="proponente_tipo"]:checked').value === "servidor";
+      document.getElementById("dados-servidor").style.display = servidor ? "" : "none";
+      document.getElementById("ajuda-servidor").style.display = servidor ? "" : "none";
+    }
+    radios.forEach(function (r) { r.addEventListener("change", mostrar); });
+    mostrar();
+  })();
+</script>
+{% endblock %}

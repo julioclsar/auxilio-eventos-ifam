@@ -1,0 +1,31 @@
+{% load auxilio_extras %}
+<div class="trecho" id="{{ b.chave }}">
+  <h3>{{ b.rotulo }} · {{ b.trecho|setas }}
+    {% if b.faltam == 0 %}<span class="chip">3 de 3</span>{% else %}<span class="chip aviso">{{ b.orcamentos|length }} de 3</span>{% endif %}</h3>
+  {% if b.orcamentos %}
+  <table>
+    <tr><th>Orçamento</th><th>{% if b.categoria == 'hospedagem' %}Hotel ou plataforma{% else %}Empresa ou site{% endif %}</th><th class="num">Valor</th><th>Print</th><th></th></tr>
+    {% for o in b.orcamentos %}
+    <tr {% if o.valor == b.menor and b.orcamentos|length > 1 %}class="menor"{% endif %}>
+      <td>{{ forloop.counter }}{% if o.valor == b.menor and b.orcamentos|length > 1 %} <span class="chip">menor</span>{% endif %}</td><td>{{ o.fonte|default:"—" }}</td><td class="num">{{ o.valor|brl }}</td>
+      <td>{% if o.comprovante %}<a href="{% url 'baixar_comprovante' o.pk %}" target="_blank">Ver</a>{% else %}<span class="erro-campo">faltando</span>{% endif %}</td>
+      <td class="num">{% if editavel %}<form method="post" action="{% url 'orcamento_excluir' sol.pk o.pk %}" data-confirmar="Excluir este orçamento?">{% csrf_token %}<button class="btn perigo-sec mini" type="submit">Excluir</button></form>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  {% if b.form and editavel %}
+  <form method="post" enctype="multipart/form-data" novalidate class="vaga">{% csrf_token %}
+    <input type="hidden" name="bloco" value="{{ b.chave }}">
+    {{ b.form.categoria }}{{ b.form.trecho }}
+    <p class="vaga-titulo">Orçamento {{ b.numero }} de 3</p>
+    {% include "auxilio/_erros_form.html" with form=b.form sem_nota=True %}
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=b.form.fonte %}
+      {% include "auxilio/_campo.html" with f=b.form.valor %}
+      {% include "auxilio/_campo.html" with f=b.form.comprovante %}
+    </div>
+    <p style="margin-top:.7rem"><button class="btn" type="submit">Adicionar orçamento {{ b.numero }}</button></p>
+  </form>
+  {% endif %}
+</div>

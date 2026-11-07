@@ -1,0 +1,24 @@
+{% extends "auxilio/base.html" %}
+{% load auxilio_extras %}
+{% block titulo %}Análise DAES/PROEN{% endblock %}
+{% block conteudo %}
+<p class="ola">Olá, {{ user.perfil.nome_completo|default:user.email }}</p>
+<div class="linha entre"><h1>Solicitações</h1>
+  <form method="get" class="linha" role="search">
+    <label class="sr-only" for="busca">Buscar</label>
+    <input id="busca" type="search" name="q" value="{{ busca }}" placeholder="Nome, matrícula, evento ou código" style="min-width:16rem">
+    <label class="sr-only" for="filtro-status">Status</label>
+    <select id="filtro-status" name="status" onchange="this.form.submit()" style="padding:.4rem;border-radius:7px">
+    <option value="">Todos os status</option>{% for v, r in status_opcoes %}<option value="{{ v }}" {% if v == filtro %}selected{% endif %}>{{ r }}</option>{% endfor %}</select>
+    <button class="btn mini" type="submit">Buscar</button>
+    {% if busca or filtro %}<a href="{% url 'analise_lista' %}">Limpar</a>{% endif %}</form></div>
+<div class="card">
+  <table>
+    <tr><th>Código</th><th>Proponente</th><th class="num">Estudantes</th><th>Evento</th><th class="num">Valor</th><th>Status</th></tr>
+    {% for s in solicitacoes %}
+    <tr><td><a href="{% url 'analise_detalhe' s.pk %}">#{{ s.codigo }}</a></td><td>{{ s.proponente.nome }}</td><td class="num">{{ s.n_estudantes }}</td><td>{{ s.evento_nome }}</td>
+      <td class="num">{{ s.valor_total|brl }}</td><td><span class="chip {{ s.status_classe }}">{{ s.status_rotulo }}</span></td></tr>
+    {% empty %}<tr><td colspan="6" class="muted">{% if busca or filtro %}Nenhuma solicitação encontrada com esse filtro.{% else %}Nenhuma solicitação protocolada ainda.{% endif %}</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

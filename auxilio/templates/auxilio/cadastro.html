@@ -1,0 +1,21 @@
+{% extends "auxilio/base.html" %}
+{% block titulo %}Criar conta{% endblock %}
+{% block conteudo %}
+{% load static %}<div class="login card">
+  <img class="selo" src="{% static 'auxilio/ifam-selo.png' %}" alt="Instituto Federal do Amazonas">
+  <h1>Criar conta</h1>
+  <p class="muted">Para estudantes e servidores do IFAM. Use o seu e-mail institucional, ele será o seu login.</p>
+  <form method="post" novalidate>{% csrf_token %}
+  {% include "auxilio/_erros_form.html" %}
+    <div class="campos" style="grid-template-columns:1fr">
+      <div class="campo radios"><label>{{ form.tipo.label }}</label>{{ form.tipo }}</div>
+      {% include "auxilio/_campo.html" with f=form.nome_completo %}
+      {% include "auxilio/_campo.html" with f=form.email %}
+      {% include "auxilio/_campo.html" with f=form.senha %}
+      {% include "auxilio/_campo.html" with f=form.senha2 %}
+    </div>
+    <p style="margin-top:1rem"><button class="btn" type="submit">Criar conta</button></p>
+  </form>
+  <p class="pequeno muted">Já tem conta? <a href="{% url 'entrar' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}">Entrar</a></p>
+</div>
+{% endblock %}

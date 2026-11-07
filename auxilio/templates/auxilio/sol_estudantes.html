@@ -1,0 +1,74 @@
+{% extends "auxilio/sol_base.html" %}
+{% load auxilio_extras %}
+{% block corpo %}
+<div class="card" id="estudantes-do-pedido">
+  <h2>Estudantes do pedido</h2>
+  <p class="muted pequeno">Até 12 estudantes (Anexo II). Todos recebem o mesmo valor (item 4.3). Para cada um, escolha entre convidar, para que ele(a) mesmo(a) envie as declarações e os documentos, ou preencher tudo aqui.</p>
+  {% for l in linhas %}
+  <div class="item" id="e{{ l.e.pk }}">
+    <div class="marca {% if l.e.declaracoes_ok and l.docs == l.docs_total %}ok{% else %}falta{% endif %}">{{ forloop.counter }}</div>
+    <div class="corpo">
+      <div class="linha entre">
+        <div><strong>{{ l.e.nome_exibido }}</strong>{% if l.e.matricula_exibida %} · matrícula {{ l.e.matricula_exibida }}{% endif %}
+          <div class="pequeno">
+            {% if l.e.e_quem_preenche %}<span class="chip">você</span>
+            {% elif l.e.usuario_id %}<span class="chip">tem conta, envia os próprios documentos</span>
+            {% else %}<span class="chip cinza">sem conta</span>{% endif %}
+            {% if l.e.declaracoes_ok %}<span class="chip">declarações confirmadas</span>{% else %}<span class="chip erro">declarações pendentes</span>{% endif %}
+            <span class="chip {% if l.docs == l.docs_total %}{% else %}aviso{% endif %}">documentos {{ l.docs }}/{{ l.docs_total }}</span>
+          </div>
+        </div>
+        {% if editavel and not l.e.e_quem_preenche %}
+        <form method="post" data-confirmar="Remover {{ l.e.nome_exibido }} do pedido? Os documentos dele(a) também saem.">{% csrf_token %}<input type="hidden" name="acao" value="remover"><input type="hidden" name="participante" value="{{ l.e.pk }}"><button class="btn perigo-sec mini" type="submit">Remover</button></form>
+        {% endif %}
+      </div>
+
+      {% if not l.e.usuario_id and editavel %}
+      <details style="margin-top:.5rem" open><summary>Convidar para enviar os próprios documentos</summary>
+        {% if not l.e.email %}<p class="pequeno erro-campo">Informe o e-mail institucional do(a) estudante abaixo. Só a conta com esse e-mail consegue aceitar o convite.</p>{% endif %}
+        <p class="pequeno muted">Mande o link. O colega entra com o e-mail {{ l.e.email|default:"institucional" }} (ou cria a conta com ele) e passa a enviar as declarações, o histórico, o RG e CPF e o Nada Consta dele.</p>
+        <div class="rascunho-email" style="max-height:none">{{ l.link }}</div>
+        {% if l.email_convite %}
+        <div class="linha" style="margin-top:.4rem"><a class="btn sec mini" href="{{ l.email_convite.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+          <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText('{{ l.link }}')">Copiar link</button></div>
+        {% else %}<p class="pequeno muted">Informe o e-mail abaixo para o sistema escrever o convite.</p>{% endif %}
+      </details>
+      {% endif %}
+
+      {% if not l.pode_editar %}
+      <p class="pequeno muted" style="margin-top:.5rem">{{ l.e.nome_exibido }} tem conta e confirma as próprias declarações (item 7.3).{% if not l.e.declaracoes_ok %} Peça para entrar no sistema e confirmar.{% endif %}</p>
+      {% else %}
+      <details style="margin-top:.5rem" open><summary>{% if l.e.usuario_id %}Declarações{% else %}Dados e declarações{% endif %}</summary>
+        <form method="post" style="margin-top:.5rem">{% csrf_token %}<input type="hidden" name="acao" value="salvar"><input type="hidden" name="participante" value="{{ l.e.pk }}">
+          <div class="campos">
+            {% for f in l.form %}{% include "auxilio/_campo.html" with f=f %}{% endfor %}
+          </div>
+          {% if editavel %}<p style="margin-top:.6rem"><button class="btn sec mini" type="submit">Salvar</button></p>{% endif %}
+        </form>
+      </details>
+      {% endif %}
+      <p class="pequeno" style="margin-top:.4rem"><a href="{% url 'sol_documentos' sol.pk %}#e{{ l.e.pk }}">Documentos de {{ l.e.nome_exibido }}</a></p>
+    </div>
+  </div>
+  {% empty %}
+  <p class="muted">Nenhum estudante ainda.</p>
+  {% endfor %}
+</div>
+
+{% if editavel and cabe_mais %}
+<div class="card" id="incluir-estudante">
+  <h2>Incluir estudante</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="acao" value="incluir">
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=novo.nome_completo %}
+      {% include "auxilio/_campo.html" with f=novo.email %}
+      {% include "auxilio/_campo.html" with f=novo.matricula %}
+      {% include "auxilio/_campo.html" with f=novo.curso %}
+      {% include "auxilio/_campo.html" with f=novo.nascimento %}
+    </div>
+    <p class="ajuda">Com o e-mail, você pode convidar o colega depois. Sem conta, você mesmo(a) confirma as declarações e anexa os documentos dele(a).</p>
+    <p style="margin-top:.8rem"><button class="btn" type="submit">Incluir</button></p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

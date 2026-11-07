@@ -1,0 +1,13 @@
+{% load auxilio_extras %}
+<div class="kpi">
+  <div><div class="v">{% if r.pedidos.inscricao %}{{ r.inscricao|brl }}{% else %}—{% endif %}</div>
+    <div class="r">Inscrição{% if not r.pedidos.inscricao %} (não solicitada){% elif not r.inscricao %} (informe o valor){% endif %}</div></div>
+  <div><div class="v">{% if r.pedidos.traslado %}{{ r.traslado|brl }}{% else %}—{% endif %}</div>
+    <div class="r">Traslado{% if not r.pedidos.traslado %} (não solicitado){% elif not r.traslado %} (faltam os orçamentos){% else %} (menor preço de cada trecho){% endif %}</div></div>
+  <div><div class="v">{% if r.pedidos.alimentacao %}{{ r.alimentacao|brl }}{% else %}—{% endif %}</div>
+    <div class="r">Alimentação{% if not r.pedidos.alimentacao %} (não solicitada){% elif not r.alimentacao %} (informe as datas da viagem){% else %} ({% if r.alimentacao_inteiras %}{{ r.alimentacao_inteiras }} dia{{ r.alimentacao_inteiras|pluralize }} inteiro{{ r.alimentacao_inteiras|pluralize }} de {{ r.valor_diaria|brl }}{% if r.alimentacao_meias %} e {% endif %}{% endif %}{% if r.alimentacao_meias %}{{ r.alimentacao_meias }} dia{{ r.alimentacao_meias|pluralize }} de embarque pela metade{% endif %}){% endif %}</div></div>
+  <div><div class="v">{% if r.pedidos.hospedagem %}{{ r.hospedagem|brl }}{% else %}—{% endif %}</div>
+    <div class="r">Hospedagem{% if not r.pedidos.hospedagem %} (não solicitada){% elif not r.hospedagem %} (faltam os orçamentos){% else %} ({{ r.diarias_hospedagem }} diária{{ r.diarias_hospedagem|pluralize }}){% endif %}</div></div>
+  <div class="total"><div class="v">{{ r.total|brl }}</div><div class="r">Total solicitado{% if r.n > 1 %} ({{ r.n }} estudantes × {{ r.por_aluno.total|brl }}){% endif %}</div></div>
+</div>
+{% if r.n > 1 %}<p class="pequeno muted" style="margin-top:.5rem">Valor único por estudante (item 4.3). Os valores acima já somam os {{ r.n }} estudantes.</p>{% endif %}

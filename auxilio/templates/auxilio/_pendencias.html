@@ -1,0 +1,14 @@
+{% if lista %}
+<ul class="pend">
+  {% for p in lista %}
+  <li class="{{ p.nivel }}"><span>{{ p.msg }}</span>
+    {% if p.passo == 'dados' %}<a href="{% url 'sol_dados' sol.pk %}">Corrigir</a>
+    {% elif p.passo == 'estudantes' %}<a href="{% url 'sol_estudantes' sol.pk %}">Corrigir</a>
+    {% elif p.passo == 'orcamentos' %}<a href="{% url 'sol_orcamentos' sol.pk %}">Corrigir</a>
+    {% elif p.passo == 'documentos' %}<a href="{% url 'sol_documentos' sol.pk %}">Anexar</a>
+    {% elif p.passo == 'assinaturas' %}<a href="{% url 'sol_assinaturas' sol.pk %}">Abrir</a>
+    {% elif p.passo == 'perfil' %}<a href="{% url 'perfil' %}">Abrir perfil</a>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

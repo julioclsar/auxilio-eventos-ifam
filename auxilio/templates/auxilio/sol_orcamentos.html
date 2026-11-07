@@ -1,0 +1,51 @@
+{% extends "auxilio/sol_base.html" %}
+{% load auxilio_extras %}
+{% block corpo %}
+{% if r.so_inscricao %}
+<div class="card"><p>Neste caso só o Auxílio-Inscrição é possível, então não há pesquisa de preços a fazer.</p></div>
+{% elif not destino %}
+<div class="card"><p>Informe a cidade do evento na aba <a href="{% url 'sol_dados' sol.pk %}">Evento</a>. Os trechos da viagem são montados a partir dela.</p></div>
+{% else %}
+<p class="nota-obrig">Campos com <span class="obrig">*</span> são obrigatórios.</p>
+
+<div class="card">
+  <h2>Passagens <span class="muted pequeno">(Auxílio-Traslado)</span></h2>
+  {% if not r.pedidos.traslado %}
+  <p class="muted">Você não marcou o Auxílio-Traslado na aba Evento.</p>
+  {% else %}
+  <p class="muted pequeno">Para cada trecho, pesquise o preço em três empresas ou sites diferentes e anexe o print de cada pesquisa. Vale o menor preço de cada trecho (itens 7.1.9 e 7.1.10).</p>
+  {% for b in blocos_traslado %}{% include "auxilio/_trecho.html" %}{% endfor %}
+  {% if r.trechos_traslado %}<p class="total-trechos">Total das passagens: <strong>{{ r.traslado|brl }}</strong></p>{% endif %}
+
+  {% if editavel %}
+  <div class="trecho" id="novo">
+    <h3>Outro trecho <span class="muted pequeno">(opcional)</span></h3>
+    <p class="muted pequeno">Só se a viagem tiver mais um trecho comprado à parte, como o ônibus até o aeroporto. Escreva o trecho e cadastre o primeiro orçamento. Os outros dois entram na caixa que vai aparecer.</p>
+    <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+      <input type="hidden" name="bloco" value="novo"><input type="hidden" name="aberto" value="1">
+      {{ form_extra.categoria }}
+      {% include "auxilio/_erros_form.html" with form=form_extra sem_nota=True %}
+      <div class="campos">
+        {% include "auxilio/_campo.html" with f=form_extra.trecho %}
+        {% include "auxilio/_campo.html" with f=form_extra.fonte %}
+        {% include "auxilio/_campo.html" with f=form_extra.valor %}
+        {% include "auxilio/_campo.html" with f=form_extra.comprovante %}
+      </div>
+      <p style="margin-top:.7rem"><button class="btn sec" type="submit">Adicionar trecho</button></p>
+    </form>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Hospedagem <span class="muted pequeno">(Auxílio-Hospedagem)</span></h2>
+  {% if not r.pedidos.hospedagem %}
+  <p class="muted">Você não marcou o Auxílio-Hospedagem na aba Evento.</p>
+  {% else %}
+  <p class="muted pequeno">Pesquise o preço total das {{ n_diarias }} diária{{ n_diarias|pluralize }} em três hotéis ou plataformas diferentes e anexe o print de cada pesquisa. Vale o menor preço.</p>
+  {% for b in blocos_hospedagem %}{% include "auxilio/_trecho.html" %}{% endfor %}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

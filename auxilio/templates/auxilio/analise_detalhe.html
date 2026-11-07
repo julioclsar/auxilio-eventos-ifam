@@ -1,0 +1,94 @@
+{% extends "auxilio/base.html" %}
+{% load auxilio_extras %}
+{% block titulo %}Análise #{{ sol.codigo }}{% endblock %}
+{% block conteudo %}
+<a class="btn sec migalha" href="{% url 'analise_lista' %}" title="Voltar para Solicitações">← Voltar</a>
+<div class="card">
+  <div class="cabeca-status">
+    <span class="chip {{ sol.status_classe }}">{{ sol.status_rotulo }}</span>
+    <div><h1>{{ sol.proponente.nome }} · {{ sol.evento_nome }}</h1>
+      <div class="muted pequeno">#{{ sol.codigo }} · proponente {% if sol.proponente.servidor %}servidor(a), SIAPE {{ sol.proponente.siape }}{% else %}estudante{% endif %} · {{ sol.n_estudantes }} estudante{{ sol.n_estudantes|pluralize }} · {{ sol.cidade }}/{{ sol.uf }} · viagem {{ sol.viagem_ida|data_br }} a {{ sol.viagem_volta|data_br }}
+        {% if sol.numero_processo %}· processo {{ sol.numero_processo }}{% endif %}</div></div>
+  </div>
+  {% etapas sol as lista %}<div class="etapas">{% for e in lista %}<div class="etapa {{ e.estado }}">{{ e.nome }}</div>{% endfor %}</div>
+</div>
+
+<div class="card"><h2>Valores solicitados</h2>{% include "auxilio/_valores.html" %}
+  {% if r.n_pagos < r.n %}<p class="pend"><span class="chip aviso">Valor a pagar {{ r.total_pago|brl }}</span> <span class="pequeno">{{ r.n_pagos }} de {{ r.n }} estudantes. Quem desistiu antes do pagamento sai do valor (item 10.4.1).</span></p>{% endif %}
+  <h3 style="margin-top:1rem">Estudantes (Anexo II)</h3>
+  <table><tr><th>#</th><th>Nome</th><th>Matrícula</th><th>Declarações</th></tr>
+  {% for e in sol.estudantes %}<tr><td>{{ forloop.counter }}</td><td>{{ e.nome_exibido }}</td><td>{{ e.matricula_exibida }}</td><td>{% if e.declaracoes_ok %}<span class="chip">confirmadas</span>{% else %}<span class="chip erro">faltando</span>{% endif %}</td></tr>{% endfor %}</table>
+  {% if r.acima_do_teto %}<p class="erro-campo">Acima do teto por proposta de {{ r.teto|brl }}.</p>{% endif %}</div>
+
+<div class="grade2">
+  <div class="card"><h2>Conformidade documental</h2>
+    {% for i in checklist %}
+    <div class="item"><div class="marca {% if i.ok %}ok{% elif i.obrigatorio %}falta{% endif %}">{% if i.ok %}✓{% else %}!{% endif %}</div>
+      <div class="corpo">{{ i.rotulo }}<div class="muted pequeno">{{ i.ref }}{% if i.detalhe %} · {{ i.detalhe }}{% endif %}</div>
+      {% if i.doc %}<a class="pequeno" href="{% url 'baixar' i.doc.pk %}" target="_blank">{{ i.doc.nome_original }}</a>{% if i.doc.verificacao.resumo %}<div class="muted pequeno">{{ i.doc.verificacao.resumo }}</div>{% endif %}{% endif %}</div></div>
+    {% endfor %}
+    {% if dossie %}<p style="margin-top:.7rem"><a class="btn sec" href="{% url 'baixar' dossie.pk %}" target="_blank">Abrir PDF único completo ({{ dossie.verificacao.paginas }} páginas)</a></p>{% endif %}
+  </div>
+  <div class="card"><h2>Pesquisa de preços</h2>
+    {% for t in r.trechos_traslado %}<h3>{{ t.trecho }}</h3>{% for o in t.orcamentos %}<div class="pequeno">{{ o.ordem }}. {{ o.fonte|default:"—" }} · {{ o.valor|brl }} {% if o.comprovante %}<a href="{% url 'baixar_comprovante' o.pk %}" target="_blank">comprovante</a>{% endif %}</div>{% endfor %}<div class="pequeno"><strong>Menor {{ t.menor|brl }}</strong></div>{% endfor %}
+    {% for t in r.trechos_hospedagem %}<h3 style="margin-top:.7rem">{{ t.trecho }}</h3>{% for o in t.orcamentos %}<div class="pequeno">{{ o.ordem }}. {{ o.fonte|default:"—" }} · {{ o.valor|brl }} {% if o.comprovante %}<a href="{% url 'baixar_comprovante' o.pk %}" target="_blank">comprovante</a>{% endif %}</div>{% endfor %}<div class="pequeno"><strong>Menor {{ t.menor|brl }}</strong></div>{% endfor %}
+    <h3 style="margin-top:1rem">Alertas do sistema</h3>
+    {% if pendencias %}<ul class="pend">{% for p in pendencias %}<li class="{{ p.nivel }}"><span>{{ p.msg }}</span></li>{% endfor %}</ul>{% else %}<p class="muted pequeno">Sem alertas.</p>{% endif %}
+  </div>
+</div>
+
+<div class="card {% if proximas %}destaque{% endif %}">
+  <h2>Decisão e andamento</h2>
+  {% if sol.status == 'indeferida' and prazo_recurso %}<p class="muted pequeno">Prazo de recurso do estudante até {{ prazo_recurso|data_br }}.</p>{% endif %}
+  {% if sol.status == 'em_recurso' %}<p><strong>Recurso do estudante</strong> {{ sol.recurso_texto }}</p>{% endif %}
+  {% if prestacao_atrasada %}<p class="erro-campo">Prestação de contas vencida em {{ prazo_prestacao|data_br }} (itens 10.1 e 10.6).</p>{% endif %}
+  {% for d in desistencias %}
+  <p class="pequeno"><strong>Desistência de {{ d.e.nome_exibido }}</strong> · {{ d.e.desistencia_motivo }}
+    {% if d.e.devolucao_estado %}<span class="chip {% if d.e.devolucao_estado == 'pendente' %}erro{% endif %}">{{ d.e.get_devolucao_estado_display }}</span>{% endif %}
+    {% if d.gru %}<a href="{% url 'baixar' d.gru.pk %}" target="_blank">comprovante</a>{% endif %}</p>
+  <div class="linha" style="gap:.4rem">
+  {% if d.e.devolucao_estado == 'pendente' and d.gru %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="acao" value="confirmar_gru_estudante"><input type="hidden" name="participante" value="{{ d.e.pk }}"><button class="btn mini" type="submit">Confirmar devolução de {{ d.e.nome_exibido }}</button></form>
+  {% endif %}
+  {% if d.e.devolucao_estado == 'suspenso' and sol.status in "paga ag_prestacao prestacao_analise prestacao_pendencia" %}
+  <form method="post" data-confirmar="{{ d.e.nome_exibido }} recebeu mesmo tendo saído antes? Abre a devolução por GRU.">{% csrf_token %}<input type="hidden" name="acao" value="cobrar_gru_estudante"><input type="hidden" name="participante" value="{{ d.e.pk }}"><button class="btn sec mini" type="submit">Recebeu mesmo assim, cobrar GRU</button></form>
+  {% endif %}
+  {% if not d.gru and d.e.devolucao_estado != 'confirmada' %}
+  <form method="post" data-confirmar="Desfazer a desistência de {{ d.e.nome_exibido }}?">{% csrf_token %}<input type="hidden" name="acao" value="desfazer_desistencia"><input type="hidden" name="participante" value="{{ d.e.pk }}"><button class="btn sec mini" type="submit">Desfazer desistência</button></form>
+  {% endif %}
+  </div>
+  {% endfor %}
+  {% if sol.desistencia_motivo %}<p><strong>Desistência</strong> {{ sol.desistencia_motivo }}{% if gru %} · <a href="{% url 'baixar' gru.pk %}" target="_blank">comprovante da GRU</a>{% endif %}</p>{% endif %}
+  {% if sol.status == 'prestacao_analise' or sol.status == 'prestacao_pendencia' or sol.status == 'concluida' %}
+    <h3>Prestação de contas</h3>
+    {% if sol.resultados_texto %}<p class="pequeno"><strong>Resultados informados</strong><br>{{ sol.resultados_texto|linebreaksbr }}</p>{% endif %}
+    {% if prestacao_pdf %}<p><a class="btn sec mini" href="{% url 'baixar' prestacao_pdf.pk %}" target="_blank">PDF único da prestação ({{ prestacao_pdf.verificacao.paginas }} páginas)</a></p>{% endif %}
+    {% if anexo6 %}<div class="pequeno"><a href="{% url 'baixar' anexo6.pk %}" target="_blank">Anexo VI assinado</a></div>{% endif %}
+    {% for c in comprovacoes %}<div class="pequeno"><a href="{% url 'baixar' c.pk %}" target="_blank">{{ c.tipo|rotulo_doc }} · {{ c.nome_original }}</a></div>{% endfor %}
+    {% if sol.prestacao_parecer %}<p class="pequeno"><strong>Último parecer</strong> {{ sol.prestacao_parecer }}</p>{% endif %}
+  {% endif %}
+  {% if proximas %}
+  <form method="post">{% csrf_token %}
+    <div class="campo"><label for="justificativa">Justificativa ou parecer (obrigatória para indeferir, arquivar ou apontar pendência)</label>
+      <textarea id="justificativa" name="justificativa" rows="3"></textarea></div>
+    <div class="linha" style="margin-top:.75rem">
+      {% for p in proximas %}
+        {% if p == 'em_analise' %}<button class="btn" name="acao" value="iniciar">Iniciar análise</button>{% endif %}
+        {% if p == 'deferida' %}<button class="btn" name="acao" value="deferir">Deferir</button>{% endif %}
+        {% if p == 'indeferida' %}<button class="btn perigo" name="acao" value="indeferir">Indeferir</button>{% endif %}
+        {% if p == 'ag_pagamento' %}<button class="btn" name="acao" value="pagamento">Encaminhar para pagamento</button>{% endif %}
+        {% if p == 'paga' %}<button class="btn" name="acao" value="pago">Registrar pagamento</button>{% endif %}
+        {% if p == 'ag_prestacao' %}<button class="btn sec" name="acao" value="abrir_prestacao">Abrir prestação de contas</button>{% endif %}
+        {% if p == 'concluida' %}<button class="btn" name="acao" value="concluir">Aprovar prestação e encerrar</button>{% endif %}
+        {% if p == 'prestacao_pendencia' %}<button class="btn sec" name="acao" value="pendencia">Apontar pendência</button>{% endif %}
+        {% if p == 'devolvida' %}{% if gru %}<button class="btn" name="acao" value="confirmar_gru">Confirmar devolução por GRU</button>{% else %}<span class="muted pequeno">Aguardando o comprovante da GRU.</span>{% endif %}{% endif %}
+        {% if p == 'arquivada' %}<button class="btn perigo" name="acao" value="arquivar">Indeferir recurso e arquivar</button>{% endif %}
+      {% endfor %}
+    </div>
+  </form>
+  {% else %}<p class="muted">Sem ações disponíveis neste status.</p>{% endif %}
+</div>
+
+<div class="card"><h2>Histórico</h2>
+  <table>{% for h in historico %}<tr><td class="pequeno muted" style="width:11rem">{{ h.em|hora_br }}</td><td>{{ h.texto }}</td><td class="pequeno muted">{{ h.por.perfil.nome_completo }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

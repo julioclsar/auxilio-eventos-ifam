@@ -1,0 +1,99 @@
+{% extends "auxilio/sol_base.html" %}
+{% load auxilio_extras %}
+{% block corpo %}
+{% if not sol.documentos_gerados_em or desatualizado %}
+<div class="card {% if pode_gerar %}destaque{% endif %}">
+  <h2>{% if desatualizado %}Gerar os documentos novamente{% else %}Gerar {% if sol.proponente_tipo == 'estudante' %}o requerimento e {% endif %}os anexos{% endif %}</h2>
+  <p>O sistema preenche {% if sol.proponente_tipo == 'estudante' %}o requerimento padrão do campus e {% endif %}os Anexos I, II e III com os dados que você informou, e os valores aparecem iguais em todos eles.</p>
+  {% if bloqueios %}
+    <p class="muted">Antes de gerar, corrija:</p>
+    {% include "auxilio/_pendencias.html" with lista=bloqueios %}
+  {% endif %}
+  {% if editavel %}
+  <form method="post" class="lento">{% csrf_token %}<input type="hidden" name="acao" value="gerar">
+    <button class="btn" type="submit" {% if not pode_gerar %}disabled{% endif %}>{% if desatualizado %}Regenerar (invalida as assinaturas){% else %}Gerar documentos{% endif %}</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if gerados %}
+<div class="card" id="como-assinar">
+  <h2>Como assinar</h2>
+  <ol class="passos">
+    {% if not prop.e_quem_preenche %}<li>O proponente é {{ prop.nome }}. Ele(a) assina {% if sol.proponente_tipo == 'servidor' %}o Anexo I e o Anexo II{% endif %}. Use o e-mail abaixo para mandar os PDFs e envie aqui os assinados.</li>{% endif %}
+    <li>Baixe o PDF gerado de cada documento abaixo.</li>
+    <li>Assine em <a href="https://assinador.iti.br" target="_blank" rel="noopener">assinador.iti.br</a> (gov.br) e salve o PDF assinado.</li>
+    <li>Envie o PDF assinado no próprio documento. O sistema confere se há assinatura digital e se o nome confere.</li>
+    <li>O Anexo I (e só ele) vai para o Diretor-Geral assinar por cima da assinatura do proponente. Você manda por e-mail e, quando ele devolver, envia o PDF assinado aqui. Só então o PDF único vai ao Protocolo.</li>
+  </ol>
+  <p class="muted pequeno">O sistema não assina por você nem cria assinatura própria. A validade jurídica vem do gov.br e do assinador institucional.</p>
+  {% if email_proponente %}
+  <h3 style="margin-top:1rem">E-mail para o(a) proponente</h3>
+  <div class="rascunho-email" id="corpo-prop">{{ email_proponente.corpo }}</div>
+  <p class="pequeno muted" style="margin-top:.4rem">Para {{ email_proponente.para }} · Assunto {{ email_proponente.assunto }}</p>
+  <div class="linha" style="margin-top:.4rem"><a class="btn sec mini" href="{{ email_proponente.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+    <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-prop').innerText)">Copiar texto</button></div>
+  {% endif %}
+</div>
+
+{% for g in gerados %}
+<div class="card" id="doc-{{ g.tipo }}">
+  <div class="linha entre">
+    <div><h3 style="margin:0">{{ g.tipo|rotulo_doc }}</h3>
+      <span class="muted pequeno">Gerado em {{ g.doc.criado_em|hora_br }}</span></div>
+    <a class="btn sec mini" href="{% url 'baixar' g.doc.pk %}" target="_blank">Baixar PDF gerado</a>
+  </div>
+  {% if g.assinaturas %}
+  <table style="margin-top:.6rem">
+    <tr><th>Quem assina</th><th>Situação</th><th>Conferência</th></tr>
+    {% for a in g.assinaturas %}
+    <tr>
+      <td>{{ a.papel_rotulo }}</td>
+      <td><span class="chip {% if a.estado == 'assinado' %}{% elif a.estado == 'devolvido' %}erro{% else %}aviso{% endif %}">{{ a.get_estado_display }}</span>
+        {% if a.assinado_em %}<div class="muted pequeno">{{ a.assinado_em|hora_br }}</div>{% endif %}</td>
+      <td class="pequeno">
+        {% if a.estado == 'devolvido' %}<strong>Devolvido pelo Diretor-Geral</strong><br>{{ a.nota }}
+        {% elif a.nota %}<span {% if 'Nenhuma' in a.nota or 'não foi' in a.nota %}class="erro-campo"{% else %}class="muted"{% endif %}>{{ a.nota }}</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% for a in g.assinaturas %}{% if a.papel == 'aluno' and editavel %}
+  <form class="upload" method="post" enctype="multipart/form-data">{% csrf_token %}
+    <input type="hidden" name="acao" value="assinado"><input type="hidden" name="tipo" value="{{ g.tipo }}">
+    <input type="file" name="arquivo" accept="application/pdf" required>
+    <button class="btn mini" type="submit">{% if a.estado == 'assinado' %}Reenviar{% elif prop.e_quem_preenche %}Enviar PDF assinado por mim{% else %}Enviar PDF assinado pelo(a) proponente{% endif %}</button>
+  </form>
+  {% endif %}{% endfor %}
+  {% if g.tipo == 'anexo1' %}
+    {% for a in g.assinaturas %}{% if a.papel == 'diretor' and a.estado != 'assinado' %}
+      {% if g.assinado and g.assinado.origem == 'aluno' %}
+      <div style="margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--borda)">
+        <h3>Assinatura do Diretor-Geral no Anexo I</h3>
+        <p class="pequeno muted">O Anexo I é o único documento que o Diretor-Geral assina. Ele assina sobre a assinatura do proponente. Só depois disso o PDF único pode ir ao Protocolo.</p>
+        <ol class="pequeno">
+          <li><a href="{% url 'baixar' g.assinado.pk %}" target="_blank">Baixe o Anexo I com a assinatura do proponente</a>.</li>
+          <li>Envie por e-mail para {{ email_diretor.para|default:"o Diretor-Geral (cadastre o e-mail do campus no admin)" }} com o texto abaixo.</li>
+          <li>Quando ele devolver assinado, envie o PDF aqui.</li>
+        </ol>
+        <p class="pequeno muted">Assunto {{ email_diretor.assunto }}</p>
+        <div class="rascunho-email" id="corpo-diretor">{{ email_diretor.corpo }}</div>
+        <div class="linha" style="margin-top:.5rem">
+          {% if email_diretor.para %}<a class="btn sec mini" href="{{ email_diretor.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>{% endif %}
+          <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-diretor').innerText)">Copiar texto</button>
+        </div>
+        <form class="upload" method="post" enctype="multipart/form-data">{% csrf_token %}
+          <input type="hidden" name="acao" value="assinado_diretor">
+          <input type="file" name="arquivo" accept="application/pdf" required>
+          <button class="btn mini" type="submit">Enviar Anexo I assinado pelo Diretor-Geral</button>
+        </form>
+      </div>
+      {% else %}<p class="pequeno muted" style="margin-top:.5rem">O proponente assina o Anexo I primeiro. Depois ele segue para o Diretor-Geral.</p>{% endif %}
+    {% endif %}{% endfor %}
+  {% endif %}
+  {% else %}<p class="muted pequeno" style="margin-top:.5rem">Este anexo não exige assinatura. Siga para o envio, ele entra no PDF único automaticamente.</p>{% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

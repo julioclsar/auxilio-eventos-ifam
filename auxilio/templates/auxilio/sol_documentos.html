@@ -1,0 +1,31 @@
+{% extends "auxilio/sol_base.html" %}
+{% load auxilio_extras %}
+{% block corpo %}
+<div class="card" id="documentos-do-pedido">
+  <h2>Documentos do pedido</h2>
+  <p class="muted pequeno">PDF, JPG ou PNG, até 20 MB. {% if sol.proponente_tipo == 'estudante' %}O requerimento e os {% else %}Os {% endif %}Anexos I, II e III são gerados pelo sistema na aba Assinaturas.</p>
+  {% for i in itens %}{% include "auxilio/_item_doc.html" %}{% endfor %}
+</div>
+
+{% for bloco in estudantes %}
+<div class="card" id="e{{ bloco.e.pk }}">
+  <h2>{{ bloco.e.nome_exibido }}</h2>
+  <p class="muted pequeno">Documentos pessoais (itens 7.1.4 a 7.1.8).{% if bloco.e.usuario_id and not bloco.e.e_quem_preenche %} Este(a) estudante tem conta e pode enviar os próprios documentos. Você também pode anexar aqui.{% endif %}</p>
+  {% for i in bloco.itens %}{% include "auxilio/_item_doc.html" %}{% endfor %}
+
+  <details style="margin-top:.6rem" open>
+    <summary>Nada Consta: <span class="chip {% if bloco.e.nc_estado == 'recebido' %}{% elif bloco.e.nc_estado == 'solicitado' %}info{% else %}cinza{% endif %}">{{ bloco.e.get_nc_estado_display }}</span></summary>
+    <p class="pequeno">A certidão não é gerada aqui. Cada estudante pede por e-mail ao Serviço Social e anexa o PDF que voltar.</p>
+    <p class="pequeno muted">Para {{ bloco.email_nc.para }}{% if bloco.email_nc.cc %} · cópia {{ bloco.email_nc.cc }}{% endif %}<br>Assunto {{ bloco.email_nc.assunto }}</p>
+    <div class="rascunho-email" id="corpo-nc{{ bloco.e.pk }}">{{ bloco.email_nc.corpo }}</div>
+    <div class="linha" style="margin-top:.6rem">
+      <a class="btn sec mini" href="{{ bloco.email_nc.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+      <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-nc{{ bloco.e.pk }}').innerText)">Copiar texto</button>
+      {% if bloco.e.nc_estado == 'nao_solicitado' %}
+      <form method="post" action="{% url 'nada_consta_solicitado' sol.pk %}">{% csrf_token %}<input type="hidden" name="participante" value="{{ bloco.e.pk }}"><button class="btn mini" type="submit">Pedido já enviado</button></form>
+      {% endif %}
+    </div>
+  </details>
+</div>
+{% endfor %}
+{% endblock %}

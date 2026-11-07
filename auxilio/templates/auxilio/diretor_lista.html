@@ -1,0 +1,44 @@
+{% extends "auxilio/base.html" %}
+{% load auxilio_extras %}
+{% block titulo %}Caixa do Diretor-Geral{% endblock %}
+{% block conteudo %}
+<p class="ola">Olá, {{ user.perfil.nome_completo|default:user.email }}</p>
+<h1>Anexos para assinatura</h1>
+<p class="muted">Formulário de Submissão (Anexo I), depois da assinatura do proponente.</p>
+
+<div class="card">
+  <h2>Aguardando a sua assinatura</h2>
+  {% for a in pendentes %}
+  <a href="{% url 'diretor_detalhe' a.solicitacao.pk %}" style="text-decoration:none;color:inherit"><div class="item">
+    <div class="corpo"><strong>{{ a.solicitacao.proponente.nome }}</strong> · {{ a.solicitacao.evento_nome }}
+      <div class="muted pequeno">#{{ a.solicitacao.codigo }} · {{ a.solicitacao.cidade }}/{{ a.solicitacao.uf }}</div></div>
+    <span class="chip aviso">Assinar</span></div></a>
+  {% empty %}<p class="muted">Nada pendente.</p>{% endfor %}
+</div>
+
+{% if aguardando_aluno %}
+<div class="card"><h2>Aguardando o proponente assinar antes</h2>
+  {% for a in aguardando_aluno %}<div class="item"><div class="corpo">{{ a.solicitacao.proponente.nome }} · {{ a.solicitacao.evento_nome }}</div><span class="chip cinza">Em preparo</span></div>{% endfor %}
+</div>
+{% endif %}
+
+{% if grus %}
+<div class="card destaque"><h2>Devoluções por GRU para confirmar</h2>
+  <p class="muted pequeno">Item 10.4.2. Confira o comprovante e confirme. Enquanto isso, o estudante fica impedido de novas solicitações (item 10.5).</p>
+  {% for g in grus %}
+  <div class="item"><div class="corpo"><strong>{{ g.nome }}</strong> · {{ g.sol.evento_nome }}
+    <div class="pequeno"><a href="{% url 'baixar' g.doc.pk %}" target="_blank">{{ g.doc.nome_original }}</a></div></div>
+    <form method="post">{% csrf_token %}<input type="hidden" name="solicitacao" value="{{ g.sol.pk }}">{% if g.e %}<input type="hidden" name="participante" value="{{ g.e.pk }}">{% endif %}
+      <button class="btn mini" type="submit">Confirmar devolução</button></form></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Já assinados</h2>
+  {% for a in assinados %}
+  <div class="item"><div class="corpo">{{ a.solicitacao.proponente.nome }} · {{ a.solicitacao.evento_nome }}
+    <div class="muted pequeno">Assinado em {{ a.assinado_em|hora_br }}</div></div><span class="chip">{{ a.solicitacao.status_rotulo }}</span></div>
+  {% empty %}<p class="muted">Nenhum ainda.</p>{% endfor %}
+</div>
+{% endblock %}

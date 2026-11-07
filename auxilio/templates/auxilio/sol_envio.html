@@ -1,0 +1,175 @@
+{% extends "auxilio/sol_base.html" %}
+{% load auxilio_extras %}
+{% block corpo %}
+
+{% if sol.status == 'pronta' or sol.status == 'incompleta' or sol.status == 'rascunho' or sol.status == 'ag_aluno' or sol.status == 'ag_diretor' %}
+<div class="card {% if pode_enviar %}destaque{% endif %}" id="pdf-unico-para-o-protocolo">
+  <h2>PDF único para o Protocolo</h2>
+  {% if not pode_enviar %}
+    <p>Ainda há pendências obrigatórias, então o envio está bloqueado.</p>
+    {% include "auxilio/_pendencias.html" with lista=erros %}
+  {% else %}
+    <p>Tudo certo. O sistema junta, nesta ordem, {{ sequencia|length }} documentos em um único PDF, com marcadores para o Protocolo navegar.</p>
+    <ol class="pequeno muted">{% for s in sequencia %}<li>{{ s }}</li>{% endfor %}</ol>
+    <form method="post" class="linha lento">{% csrf_token %}<input type="hidden" name="acao" value="dossie">
+      <button class="btn" type="submit">{% if dossie %}Gerar o PDF único novamente{% else %}Gerar o PDF único{% endif %}</button>
+      {% if dossie %}<a class="btn sec" href="{% url 'baixar' dossie.pk %}" target="_blank">Ver o PDF único ({{ dossie.verificacao.paginas }} páginas)</a>
+      <a class="btn sec" href="{% url 'baixar_pacote' sol.pk %}">Baixar pacote (.zip)</a>{% endif %}
+    </form>
+    <p class="pequeno muted" style="margin-top:.6rem">Ao Protocolo vai só o PDF único, com tudo já assinado. O pacote .zip é uma cópia de segurança com os PDFs assinados originais, caso alguém peça para validar as assinaturas digitais, porque ao juntar os PDFs o carimbo visual da assinatura permanece, mas a validação digital de cada uma não.</p>
+  {% endif %}
+</div>
+
+{% if dossie and pode_enviar %}
+<div class="card" id="e-mail-ao-protocolo">
+  <h2>E-mail ao Protocolo</h2>
+  <p class="pequeno muted">Para {{ email_protocolo.para }}<br>Assunto {{ email_protocolo.assunto }}</p>
+  <div class="rascunho-email" id="corpo-protocolo">{{ email_protocolo.corpo }}</div>
+  <div class="linha" style="margin-top:.6rem">
+    <a class="btn sec mini" href="{{ email_protocolo.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+    <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-protocolo').innerText)">Copiar texto</button>
+  </div>
+  <p class="pequeno muted">O sistema não envia e-mails. Confira o endereço do Protocolo do seu campus antes de enviar.</p>
+</div>
+
+{% if sol.status == 'pronta' %}
+<div class="card" id="registrar-o-protocolo">
+  <h2>Registrar o protocolo</h2>
+  <p class="muted pequeno">Depois de enviar, registre o número do processo (se o Protocolo informar) para acompanhar a solicitação.</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="acao" value="protocolar">
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=protocolo_form.numero_processo %}
+      {% include "auxilio/_campo.html" with f=protocolo_form.data %}
+    </div>
+    <p style="margin-top:1rem"><button class="btn" type="submit">Registrar envio ao Protocolo</button></p>
+  </form>
+</div>
+{% endif %}
+{% endif %}
+
+{% else %}
+<div class="card" id="acompanhamento">
+  <h2>Acompanhamento</h2>
+  <p>Situação atual <span class="chip {{ sol.status_classe }}">{{ sol.status_rotulo }}</span></p>
+  {% if sol.numero_processo %}<p>Processo <strong>{{ sol.numero_processo }}</strong>{% if sol.protocolada_em %} · protocolado em {{ sol.protocolada_em|data_br }}{% endif %}</p>{% endif %}
+  {% if sol.status == 'protocolada' or sol.status == 'em_analise' %}<p class="muted">O DAES/PROEN analisa o mérito e a conformidade documental. Você recebe o resultado por SIPAC e e-mail (item 8.1). Documentos pendentes não podem ser incluídos depois da análise inicial (item 7.2.3).</p>{% endif %}
+  {% if sol.status == 'deferida' or sol.status == 'ag_pagamento' %}<p class="muted">Deferida. O pagamento depende da descentralização de crédito e pode atrasar (item 9.2). O sistema não promete data de pagamento.</p>{% endif %}
+  {% if sol.decisao_justificativa %}<p><strong>Parecer</strong> {{ sol.decisao_justificativa }}</p>{% endif %}
+
+  {% if sol.status == 'indeferida' %}
+    {% if recurso_vencido %}
+      <p class="erro-campo">O prazo de recurso terminou em {{ prazo_recurso|data_br }} (item 8.2).</p>
+    {% else %}
+      {% if prazo_recurso %}<p>Prazo para recurso até <strong>{{ prazo_recurso|data_br }}</strong>. Cabe um único recurso, apenas se houve equívoco ou omissão na análise (itens 8.2 e 8.3).</p>{% endif %}
+      <form method="post" data-confirmar="Cabe um único recurso. Enviar agora?">{% csrf_token %}<input type="hidden" name="acao" value="recurso">
+        <div class="campo"><label for="recurso">Texto do recurso</label><textarea id="recurso" name="recurso" rows="4" required></textarea></div>
+        <p style="margin-top:.75rem"><button class="btn" type="submit">Interpor recurso</button></p>
+      </form>
+    {% endif %}
+  {% endif %}
+  {% if sol.status == 'em_recurso' %}<p><strong>Recurso interposto.</strong> {{ sol.recurso_texto }}</p>{% endif %}
+  {% if sol.status == 'paga' %}
+    {% if evento_terminou %}
+      <p>Pagamento registrado e o evento já terminou. Abra a prestação de contas (prazo de 30 dias, item 10.1).</p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="acao" value="evento_realizado"><button class="btn" type="submit">Participei do evento, abrir prestação de contas</button></form>
+    {% else %}
+      <p>Pagamento registrado. A prestação de contas abre em {{ fim_evento|data_br }}, quando o evento termina.</p>
+    {% endif %}
+  {% endif %}
+  {% if sol.status == 'cancelada' %}
+    <p><strong>Desistência registrada.</strong> {{ sol.desistencia_motivo }}</p>
+    <p class="muted pequeno">Comunique à Direção-Geral e peça a suspensão do pagamento (item 10.4.1).</p>
+    <div class="rascunho-email" id="corpo-desistencia">{{ email_desistencia.corpo }}</div>
+  <p class="pequeno muted" style="margin-top:.4rem">Para {{ email_desistencia.para }} · Assunto {{ email_desistencia.assunto }}</p>
+  <div class="linha" style="margin-top:.4rem">
+    <a class="btn sec mini" href="{{ email_desistencia.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+    <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-desistencia').innerText)">Copiar texto</button>
+  </div>
+  {% endif %}
+  {% if sol.status == 'ag_devolucao' %}
+    <p><strong>Devolução pendente.</strong> Como o auxílio já foi pago, o valor volta por GRU (item 10.4.2). Enquanto isso, novas solicitações ficam bloqueadas (item 10.5).</p>
+    <ol class="pequeno">
+      <li>Peça a GRU à Direção-Geral{% if not gru %} com o e-mail abaixo{% endif %}.</li>
+      <li>Pague a GRU e envie o comprovante aqui.</li>
+      <li>Mande o comprovante à Direção-Geral{% if gru %} com o e-mail abaixo{% endif %}.</li>
+    </ol>
+    <div class="rascunho-email" id="corpo-devolucao">{{ email_devolucao.corpo }}</div>
+  <p class="pequeno muted" style="margin-top:.4rem">Para {{ email_devolucao.para }} · Assunto {{ email_devolucao.assunto }}</p>
+  <div class="linha" style="margin-top:.4rem">
+    <a class="btn sec mini" href="{{ email_devolucao.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+    <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-devolucao').innerText)">Copiar texto</button>
+  </div>
+    {% if gru %}<p class="pequeno" style="margin-top:.8rem"><span class="chip aviso">Comprovante enviado</span> <a href="{% url 'baixar' gru.pk %}" target="_blank">{{ gru.nome_original }}</a>. O bloqueio sai quando o DAES ou a Direção-Geral confirmar a devolução.</p>{% endif %}
+    <form class="upload" method="post" enctype="multipart/form-data" style="margin-top:.8rem">{% csrf_token %}<input type="hidden" name="acao" value="gru">
+      <input type="file" name="arquivo" required><button class="btn mini" type="submit">{% if gru %}Substituir comprovante da GRU{% else %}Enviar comprovante da GRU{% endif %}</button></form>
+  {% endif %}
+  {% if sol.status == 'devolvida' %}
+    <p><strong>Devolução confirmada.</strong>{% if gru %} <a href="{% url 'baixar' gru.pk %}" target="_blank">Comprovante da GRU</a>{% endif %}</p>
+    <div class="rascunho-email" id="corpo-devolucao">{{ email_devolucao.corpo }}</div>
+  <p class="pequeno muted" style="margin-top:.4rem">Para {{ email_devolucao.para }} · Assunto {{ email_devolucao.assunto }}</p>
+  <div class="linha" style="margin-top:.4rem">
+    <a class="btn sec mini" href="{{ email_devolucao.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+    <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-devolucao').innerText)">Copiar texto</button>
+  </div>
+  {% endif %}
+  {% if sol.status == 'ag_prestacao' or sol.status == 'prestacao_analise' or sol.status == 'prestacao_pendencia' or sol.status == 'concluida' %}
+    <p><a class="btn" href="{% url 'sol_prestacao' sol.pk %}">Ir para a prestação de contas</a></p>
+  {% endif %}
+</div>
+
+{% if desistencias %}
+<div class="card" id="estudantes-que-desistiram">
+  <h2>Estudantes que desistiram</h2>
+  {% for d in desistencias %}
+  <div class="item"><div class="corpo">
+    <strong>{{ d.e.nome_exibido }}</strong> <span class="chip {% if d.e.devolucao_estado == 'pendente' %}erro{% elif d.e.devolucao_estado == 'suspenso' %}cinza{% endif %}">{{ d.e.get_devolucao_estado_display }}</span>
+    <div class="muted pequeno">{{ d.e.desistencia_motivo }}</div>
+    <details style="margin-top:.4rem" open><summary>E-mail à Direção-Geral</summary>
+    <div class="rascunho-email" id="corpo-d{{ d.e.pk }}">{{ d.email.corpo }}</div>
+    <p class="pequeno muted" style="margin-top:.4rem">Para {{ d.email.para }} · Assunto {{ d.email.assunto }}</p>
+    <div class="linha" style="margin-top:.4rem"><a class="btn sec mini" href="{{ d.email.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+      <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-d{{ d.e.pk }}').innerText)">Copiar texto</button></div>
+    </details>
+    {% if not d.gru and d.e.devolucao_estado != 'confirmada' and d.e.devolucao_estado != 'pendente' %}
+    <form method="post" data-confirmar="Desfazer a desistência de {{ d.e.nome_exibido }}?" style="margin-top:.4rem">{% csrf_token %}<input type="hidden" name="acao" value="desfazer_desistencia"><input type="hidden" name="participante" value="{{ d.e.pk }}"><button class="btn sec mini" type="submit">Desfazer desistência</button></form>
+    {% endif %}
+    {% if d.e.devolucao_estado == 'pendente' %}
+    {% if d.gru %}<p class="pequeno"><span class="chip aviso">Comprovante enviado</span> <a href="{% url 'baixar' d.gru.pk %}" target="_blank">{{ d.gru.nome_original }}</a>. Aguardando confirmação.</p>{% endif %}
+    <form class="upload" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="acao" value="gru_estudante"><input type="hidden" name="participante" value="{{ d.e.pk }}">
+      <input type="file" name="arquivo" required><button class="btn mini" type="submit">{% if d.gru %}Substituir comprovante{% else %}Enviar comprovante da GRU{% endif %}</button></form>
+    {% endif %}
+  </div></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if pode_desistir_estudante %}
+<div class="card" id="um-estudante-nao-vai-mais">
+  <h2>Um estudante não vai mais</h2>
+  <p class="muted pequeno">Os outros continuam. {% if desistir_com_gru %}Como o auxílio já foi pago, ele(a) devolve só a própria parte por GRU e fica impedido(a) de novos pedidos até a confirmação (itens 10.4.2 e 10.5).{% else %}Antes do pagamento, a Direção-Geral suspende só a parte dele(a) (item 10.4.1).{% endif %}</p>
+  <form method="post" data-confirmar="Registrar a desistência deste estudante? Não dá para desfazer.">{% csrf_token %}<input type="hidden" name="acao" value="desistir_estudante">
+    <div class="campos">
+      <div class="campo"><label for="desiste">Estudante</label><select id="desiste" name="participante">{% for e in ativos %}<option value="{{ e.pk }}">{{ e.nome_exibido }}</option>{% endfor %}</select></div>
+      <div class="campo larga"><label for="motivo_e">Motivo</label><textarea id="motivo_e" name="motivo" rows="2" required></textarea></div>
+    </div>
+    <p style="margin-top:.6rem"><button class="btn perigo" type="submit">Registrar desistência do estudante</button></p>
+  </form>
+</div>
+{% endif %}
+
+{% if pode_desistir %}
+<div class="card">
+  <h2>{% if ativos|length > 1 %}Ninguém do pedido vai mais{% else %}Não vou mais participar{% endif %}</h2>
+  {% if desistir_com_gru %}
+    <p class="muted pequeno">O auxílio já foi pago, então desistir abre a devolução do valor por GRU (item 10.4.2). Até o comprovante ser registrado, novas solicitações ficam bloqueadas (item 10.5).</p>
+  {% else %}
+    <p class="muted pequeno">Antes do pagamento, a desistência cancela a solicitação e você pede à Direção-Geral a suspensão do pagamento (item 10.4.1).</p>
+  {% endif %}
+  <form method="post" data-confirmar="Registrar a desistência? Não dá para desfazer.">{% csrf_token %}<input type="hidden" name="acao" value="desistir">
+    <div class="campo"><label for="motivo">Motivo</label><textarea id="motivo" name="motivo" rows="2" required></textarea></div>
+    <p style="margin-top:.6rem"><button class="btn perigo" type="submit">Registrar desistência</button></p>
+  </form>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

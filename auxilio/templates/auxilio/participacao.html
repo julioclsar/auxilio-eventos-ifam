@@ -1,0 +1,89 @@
+{% extends "auxilio/base.html" %}
+{% load auxilio_extras %}
+{% block titulo %}{{ sol.evento_nome|default:"Pedido de auxílio" }}{% if desistencia %}
+<div class="card" id="sua-desistencia">
+  <h2>Sua desistência</h2>
+  <p>{{ desistencia.e.desistencia_motivo }} {% if desistencia.e.devolucao_estado %}<span class="chip {% if desistencia.e.devolucao_estado == 'pendente' %}erro{% elif desistencia.e.devolucao_estado == 'suspenso' %}cinza{% endif %}">{{ desistencia.e.get_devolucao_estado_display }}</span>{% endif %}</p>
+  <div class="rascunho-email" id="corpo-minha">{{ desistencia.email.corpo }}</div>
+    <p class="pequeno muted" style="margin-top:.4rem">Para {{ desistencia.email.para }} · Assunto {{ desistencia.email.assunto }}</p>
+    <div class="linha" style="margin-top:.4rem"><a class="btn sec mini" href="{{ desistencia.email.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+      <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-minha').innerText)">Copiar texto</button></div>
+  {% if desistencia.e.devolucao_estado == 'pendente' %}
+  <p class="pequeno" style="margin-top:.6rem">Peça a GRU à Direção-Geral, pague e envie o comprovante aqui. Até a confirmação, novos pedidos ficam bloqueados (item 10.5).</p>
+  {% if desistencia.gru %}<p class="pequeno"><span class="chip aviso">Comprovante enviado</span> <a href="{% url 'baixar' desistencia.gru.pk %}" target="_blank">{{ desistencia.gru.nome_original }}</a></p>{% endif %}
+  <form class="upload" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="acao" value="gru">
+    <input type="file" name="arquivo" required><button class="btn mini" type="submit">{% if desistencia.gru %}Substituir comprovante{% else %}Enviar comprovante da GRU{% endif %}</button></form>
+  {% endif %}
+</div>
+{% elif pode_desistir %}
+<div class="card" id="nao-vou-mais-participar">
+  <h2>Não vou mais participar</h2>
+  <p class="muted pequeno">O pedido continua para os colegas. {% if sol.status == 'paga' or sol.status == 'ag_prestacao' %}Como o auxílio já foi pago, você devolve a sua parte por GRU (item 10.4.2).{% else %}A Direção-Geral suspende a sua parte do pagamento (item 10.4.1).{% endif %}</p>
+  <form method="post" data-confirmar="Registrar a sua desistência? Não dá para desfazer.">{% csrf_token %}<input type="hidden" name="acao" value="desistir">
+    <div class="campo"><label for="motivo">Motivo</label><textarea id="motivo" name="motivo" rows="2" required></textarea></div>
+    <p style="margin-top:.6rem"><button class="btn perigo" type="submit">Registrar desistência</button></p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}
+{% block conteudo %}
+<a class="btn sec migalha" href="{% url 'inicio' %}" title="Voltar para Minhas solicitações">← Voltar</a>
+<div class="card">
+  <div class="cabeca-status">
+    <span class="chip {{ sol.status_classe }}">{{ sol.status_rotulo }}</span>
+    <h1>{{ sol.evento_nome|default:"Evento ainda sem nome" }}</h1>
+    <div class="muted pequeno">Proponente {{ sol.proponente.nome }}{% if sol.cidade %} · {{ sol.cidade }}/{{ sol.uf }}{% endif %}{% if sol.viagem_ida %} · viagem de {{ sol.viagem_ida|data_br }} a {{ sol.viagem_volta|data_br }}{% endif %}</div>
+  </div>
+  <p style="margin-top:.6rem">Você foi incluído(a) neste pedido. Aqui você confirma as suas declarações e envia os seus documentos. O restante fica com quem preenche o pedido.</p>
+  {% if r.por_aluno.total %}<p class="pequeno">Valor previsto por estudante: <strong>{{ r.por_aluno.total|brl }}</strong></p>{% endif %}
+  {% if not perfil_completo %}<p class="pequeno erro-campo">Complete <a href="{% url 'perfil' %}">o seu perfil</a> (matrícula e curso aparecem no Anexo II).</p>{% endif %}
+</div>
+
+<div class="card {% if not e.declaracoes_ok %}destaque{% endif %}" id="suas-declaracoes">
+  <h2>Suas declarações</h2>
+  <p class="muted pequeno">O sistema não consulta o SIGAA. As declarações ficam sob a sua responsabilidade (item 7.3).</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="acao" value="declaracoes">
+    <div class="campos">{% for f in form %}{% include "auxilio/_campo.html" with f=f larga=True %}{% endfor %}</div>
+    {% if editavel %}<p style="margin-top:.7rem"><button class="btn" type="submit">Salvar declarações</button></p>{% endif %}
+  </form>
+</div>
+
+<div class="card" id="seus-documentos">
+  <h2>Seus documentos</h2>
+  {% for i in itens %}{% include "auxilio/_item_doc.html" with modo_participacao=True %}{% endfor %}
+  <details style="margin-top:.6rem" open>
+    <summary>Pedir o Nada Consta: <span class="chip {% if e.nc_estado == 'recebido' %}{% elif e.nc_estado == 'solicitado' %}info{% else %}cinza{% endif %}">{{ e.get_nc_estado_display }}</span></summary>
+    <p class="pequeno muted">Para {{ email_nc.para }}{% if email_nc.cc %} · cópia {{ email_nc.cc }}{% endif %}<br>Assunto {{ email_nc.assunto }}</p>
+    <div class="rascunho-email" id="corpo-nc">{{ email_nc.corpo }}</div>
+    <div class="linha" style="margin-top:.6rem">
+      <a class="btn sec mini" href="{{ email_nc.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+      {% if e.nc_estado == 'nao_solicitado' and editavel %}<form method="post">{% csrf_token %}<input type="hidden" name="acao" value="nada_consta"><button class="btn mini" type="submit">Já enviei o pedido</button></form>{% endif %}
+    </div>
+  </details>
+</div>
+{% if desistencia %}
+<div class="card" id="sua-desistencia-2">
+  <h2>Sua desistência</h2>
+  <p>{{ desistencia.e.desistencia_motivo }} {% if desistencia.e.devolucao_estado %}<span class="chip {% if desistencia.e.devolucao_estado == 'pendente' %}erro{% endif %}">{{ desistencia.e.get_devolucao_estado_display }}</span>{% endif %}</p>
+  <div class="rascunho-email" id="corpo-minha">{{ desistencia.email.corpo }}</div>
+    <p class="pequeno muted" style="margin-top:.4rem">Para {{ desistencia.email.para }} · Assunto {{ desistencia.email.assunto }}</p>
+    <div class="linha" style="margin-top:.4rem"><a class="btn sec mini" href="{{ desistencia.email.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+      <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-minha').innerText)">Copiar texto</button></div>
+  {% if desistencia.e.devolucao_estado == 'pendente' %}
+  <p class="pequeno" style="margin-top:.6rem">Peça a GRU à Direção-Geral, pague e envie o comprovante aqui. Até a confirmação, novos pedidos ficam bloqueados (item 10.5).</p>
+  {% if desistencia.gru %}<p class="pequeno"><span class="chip aviso">Comprovante enviado</span> <a href="{% url 'baixar' desistencia.gru.pk %}" target="_blank">{{ desistencia.gru.nome_original }}</a></p>{% endif %}
+  <form class="upload" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="acao" value="gru">
+    <input type="file" name="arquivo" required><button class="btn mini" type="submit">{% if desistencia.gru %}Substituir comprovante{% else %}Enviar comprovante da GRU{% endif %}</button></form>
+  {% endif %}
+</div>
+{% elif pode_desistir %}
+<div class="card" id="nao-vou-mais-participar-2">
+  <h2>Não vou mais participar</h2>
+  <p class="muted pequeno">O pedido continua para os colegas. {% if sol.status == 'paga' or sol.status == 'ag_prestacao' %}Como o auxílio já foi pago, você devolve a sua parte por GRU (item 10.4.2).{% else %}A Direção-Geral suspende a sua parte do pagamento (item 10.4.1).{% endif %}</p>
+  <form method="post" data-confirmar="Registrar a sua desistência? Não dá para desfazer.">{% csrf_token %}<input type="hidden" name="acao" value="desistir">
+    <div class="campo"><label for="motivo">Motivo</label><textarea id="motivo" name="motivo" rows="2" required></textarea></div>
+    <p style="margin-top:.6rem"><button class="btn perigo" type="submit">Registrar desistência</button></p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

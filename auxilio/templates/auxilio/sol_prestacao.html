@@ -1,0 +1,103 @@
+{% extends "auxilio/sol_base.html" %}
+{% load auxilio_extras %}
+{% block corpo %}
+<div class="card {% if atrasada %}alerta-erro{% endif %}" id="prestacao-de-contas">
+  <h2>Prestação de contas</h2>
+  {% if atrasada %}
+    <p class="erro-campo"><strong>Prazo vencido em {{ prazo|data_br }}.</strong> Enquanto a prestação não for entregue, você fica impedido de novas solicitações no mesmo ano e no seguinte (item 10.6).</p>
+  {% else %}
+    <p>O prazo é de 30 dias após o evento (item 10.1){% if prazo %}, até <strong>{{ prazo|data_br }}</strong>{% if dias_restantes is not None and dias_restantes >= 0 and sol.status != 'prestacao_analise' and sol.status != 'concluida' %} (faltam {{ dias_restantes }} dia{{ dias_restantes|pluralize }}){% endif %}{% endif %}. Quem não presta contas fica impedido de novas solicitações no mesmo ano e no seguinte (item 10.6).</p>
+  {% endif %}
+  {% if sol.status == 'concluida' %}<p><span class="chip">Prestação aprovada. Processo encerrado.</span>{% if sol.prestacao_parecer %} {{ sol.prestacao_parecer }}{% endif %}</p>{% endif %}
+  {% if sol.status == 'prestacao_pendencia' %}<ul class="pend"><li class="erro"><span><strong>Pendência apontada pelo analista.</strong> {{ sol.prestacao_parecer }}</span></li></ul>{% endif %}
+  {% if sol.status == 'prestacao_analise' %}<p><span class="chip aviso">Enviada, aguardando análise</span></p>{% endif %}
+</div>
+
+{% if prestacao_pdf and sol.status != 'ag_prestacao' %}
+<div class="card {% if sol.status == 'prestacao_analise' %}destaque{% endif %}" id="enviar-ao-processo-no-sipac">
+  <h2>Enviar ao processo no SIPAC</h2>
+  <p class="muted pequeno">O relatório e as comprovações entram no processo original da solicitação (item 10.3). Envie o PDF único ao Protocolo pedindo a juntada{% if sol.numero_processo %} ao processo {{ sol.numero_processo }}{% endif %}.</p>
+  <p><a class="btn sec" href="{% url 'baixar' prestacao_pdf.pk %}" target="_blank">Baixar o PDF único da prestação ({{ prestacao_pdf.verificacao.paginas }} páginas)</a></p>
+  {% if email_prestacao %}
+  <div class="rascunho-email" id="corpo-prest">{{ email_prestacao.corpo }}</div>
+  <p class="pequeno muted" style="margin-top:.4rem">Para {{ email_prestacao.para }} · Assunto {{ email_prestacao.assunto }}</p>
+  <div class="linha" style="margin-top:.4rem">
+    <a class="btn sec mini" href="{{ email_prestacao.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+    <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-prest').innerText)">Copiar texto</button>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if sol.status == 'ag_prestacao' or sol.status == 'prestacao_pendencia' %}
+<div class="card" id="1-anexo-vi-relatorio-de-prestacao-de-con">
+  <h2>1 · Anexo VI, relatório de prestação de contas</h2>
+  <p class="muted pequeno">O relatório presta contas do que a viagem trouxe. Você aparece como proponente, igual no Anexo I, escreve os resultados, e o(a) coordenador(a) confere e assina atestando. O sistema preenche o resto.</p>
+  <form method="post" class="lento">{% csrf_token %}<input type="hidden" name="acao" value="gerar">
+    <div class="campos">
+      <div class="campo"><label for="coordenador_nome">Coordenador(a)</label><input type="text" id="coordenador_nome" name="coordenador_nome" value="{{ sol.coordenador_nome }}" required>
+        <div class="ajuda">Servidor(a) que coordena a sua participação, normalmente o(a) orientador(a).</div></div>
+      <div class="campo"><label for="coordenador_siape">SIAPE do(a) coordenador(a)</label><input type="text" id="coordenador_siape" name="coordenador_siape" value="{{ sol.coordenador_siape }}" required></div>
+      <div class="campo"><label for="coordenador_email">E-mail do(a) coordenador(a)</label><input type="email" id="coordenador_email" name="coordenador_email" value="{{ sol.coordenador_email }}" required></div>
+      <div class="campo larga"><label for="resultados">Resultados obtidos com a participação</label>
+        <textarea id="resultados" name="resultados" rows="6" required>{{ sol.resultados_texto }}</textarea>
+        <div class="ajuda">Destaque a relação entre a participação no evento, os resultados obtidos e a sua permanência e êxito no curso (orientação do Anexo VI).</div></div>
+    </div>
+    <div class="linha" style="margin-top:.7rem">
+      <button class="btn {% if anexo6 %}sec{% endif %}" type="submit">{% if anexo6 %}Salvar e gerar novamente{% else %}Salvar e gerar o Anexo VI{% endif %}</button>
+      {% if anexo6 %}<a class="btn sec" href="{% url 'baixar' anexo6.pk %}" target="_blank">Baixar Anexo VI gerado</a>{% endif %}
+    </div>
+    {% if anexo6 %}<p class="pequeno muted" style="margin-top:.4rem">Gerar novamente desfaz a assinatura já enviada.</p>{% endif %}
+  </form>
+
+  {% if ass6_servidor %}
+  <div style="margin-top:1rem;padding-top:.8rem;border-top:1px solid var(--borda)">
+    <h3>Assinatura do(a) coordenador(a) <span class="chip {% if ass6_servidor.estado != 'assinado' %}aviso{% endif %}">{{ ass6_servidor.get_estado_display }}</span></h3>
+    {% if ass6_servidor.estado != 'assinado' %}
+      <ol class="pequeno">
+        <li><a href="{% url 'baixar' anexo6.pk %}" target="_blank">Baixe o Anexo VI gerado</a>.</li>
+        <li>Envie para {{ email_servidor.para }} com o texto abaixo.</li>
+        <li>Quando voltar assinado, envie o PDF aqui.</li>
+      </ol>
+      <div class="rascunho-email" id="corpo-servidor">{{ email_servidor.corpo }}</div>
+      <p class="pequeno muted" style="margin-top:.4rem">Assunto {{ email_servidor.assunto }}</p>
+      <div class="linha" style="margin-top:.4rem">
+        <a class="btn sec mini" href="{{ email_servidor.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
+        <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-servidor').innerText)">Copiar texto</button>
+      </div>
+    {% elif ass6_servidor.nota %}<p class="pequeno muted">{{ ass6_servidor.nota }}</p>{% endif %}
+    <form class="upload" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="acao" value="assinado_servidor">
+      <input type="file" name="arquivo" accept="application/pdf" required><button class="btn mini" type="submit">{% if ass6_servidor.estado == 'assinado' %}Reenviar{% else %}Enviar Anexo VI assinado pelo(a) coordenador(a){% endif %}</button></form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card" id="2-comprovacoes">
+  <h2>2 · Comprovações</h2>
+  <p class="muted pequeno">Cada item aceita vários arquivos, por exemplo o cartão de embarque da ida e o da volta.</p>
+  {% for tipo, rotulo, docs, exigido in comprovacoes %}
+  <div class="item">
+    <div class="marca {% if docs %}ok{% elif exigido %}falta{% endif %}">{% if docs %}✓{% else %}·{% endif %}</div>
+    <div class="corpo"><div>{{ rotulo }}{% if not exigido %} <span class="chip cinza">opcional</span>{% endif %}</div>
+      {% for d in docs %}
+      <div class="linha pequeno" style="gap:.5rem">
+        <a href="{% url 'baixar' d.pk %}" target="_blank">{{ d.nome_original }}</a>
+        <form method="post" data-confirmar="Remover este arquivo?">{% csrf_token %}<input type="hidden" name="acao" value="remover"><input type="hidden" name="doc" value="{{ d.pk }}"><button class="btn perigo-sec mini" type="submit">Remover</button></form>
+      </div>
+      {% endfor %}
+      <form class="upload" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="acao" value="comprovacao"><input type="hidden" name="tipo" value="{{ tipo }}">
+        <input type="file" name="arquivo" required><button class="btn sec mini" type="submit">{% if docs %}Adicionar outro arquivo{% else %}Enviar{% endif %}</button></form>
+      {% if tipo == 'prest_certificado' and certificados_poucos %}<div class="pequeno" style="color:var(--aviso);margin-top:.3rem">{{ r.n_ativos }} estudantes participaram. Confira se há o certificado de cada um.</div>{% endif %}
+      {% if tipo == 'prest_embarque' and passagem_unica %}<div class="pequeno" style="color:var(--aviso);margin-top:.3rem">Só um arquivo enviado. Confira se ele traz a ida e a volta, ou adicione o outro trecho.</div>{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card {% if not faltas_prestacao %}destaque{% endif %}" id="3-enviar-para-analise">
+  <h2>3 · Enviar para análise</h2>
+  {% if faltas_prestacao %}<ul class="pend">{% for f in faltas_prestacao %}<li class="erro"><span>{{ f }}</span></li>{% endfor %}</ul>
+  {% else %}<p class="muted pequeno">O sistema junta o Anexo VI assinado e as comprovações em um PDF único para o processo no SIPAC.</p>{% endif %}
+  <form method="post" class="lento">{% csrf_token %}<input type="hidden" name="acao" value="enviar"><button class="btn" type="submit" {% if faltas_prestacao %}disabled{% endif %}>Gerar o PDF único e enviar a prestação</button></form>
+</div>
+{% endif %}
+{% endblock %}

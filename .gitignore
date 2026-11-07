@@ -1,0 +1,25 @@
+# Dados reais (banco com CPF, RG e endereço, e os arquivos enviados). Nunca versionar.
+dados/
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# Segredos
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Só para o computador de quem usa
+iniciar.bat
+
+# Documentação de contexto do projeto (não entra, só o código)
+docs/
+anexos/
+*.zip

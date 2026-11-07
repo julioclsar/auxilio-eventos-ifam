@@ -1,0 +1,51 @@
+{% extends "auxilio/base.html" %}
+{% load auxilio_extras %}
+{% block conteudo %}
+<div class="linha entre" style="margin-bottom:1rem">
+  <div>
+    <p class="ola">Olá, {{ user.perfil.nome_completo|default:user.email }}</p>
+    <h1>Minhas solicitações</h1>
+    <p class="muted">Auxílio Estudantil para Participação em Eventos Acadêmicos, Edital 03/2026/PROEN/IFAM.</p>
+  </div>
+  <form method="post" action="{% url 'nova' %}">{% csrf_token %}<button class="btn" type="submit">Nova solicitação</button></form>
+</div>
+
+{% for b in bloqueios %}<div class="card" style="border-color:var(--erro);background:var(--erro-fundo)"><strong>Novas solicitações bloqueadas.</strong> {{ b }}</div>{% endfor %}
+
+{% if not perfil_completo %}
+<div class="card destaque">
+  <strong>Complete seu perfil primeiro.</strong>
+  <p>{% if servidor %}SIAPE e cargo aparecem nos anexos quando você é o proponente.{% else %}Matrícula, CPF, RG, endereço e curso alimentam o requerimento e os anexos.{% endif %} Você preenche uma vez só.</p>
+  <a class="btn" href="{% url 'perfil' %}">Completar perfil</a>
+</div>
+{% endif %}
+
+{% if participacoes %}
+<h2>Pedidos em que você foi incluído(a)</h2>
+{% for e in participacoes %}
+<a href="{% url 'participacao' e.pk %}" style="text-decoration:none;color:inherit">
+  <div class="card"><div class="cabeca-status">
+    <span class="chip {{ e.solicitacao.status_classe }}">{{ e.solicitacao.status_rotulo }}</span>
+    <strong>{{ e.solicitacao.evento_nome|default:"Evento ainda sem nome" }}</strong>
+    <div class="muted pequeno">Proponente {{ e.solicitacao.proponente.nome }}{% if not e.declaracoes_ok %} · <span class="erro-campo">confirme suas declarações</span>{% endif %}</div>
+  </div></div></a>
+{% endfor %}
+<h2 style="margin-top:1.5rem">Pedidos que você preenche</h2>
+{% endif %}
+
+{% for s in solicitacoes %}
+<a href="{% url 'sol_resumo' s.pk %}" style="text-decoration:none;color:inherit">
+  <div class="card">
+    <div class="cabeca-status">
+      <span class="chip {{ s.status_classe }}">{{ s.status_rotulo }}</span>
+      <strong>#{{ s.codigo }} · {{ s.evento_nome|default:"Evento ainda sem nome" }}</strong>
+      {% if s.n_estudantes > 1 or s.proponente_tipo == 'servidor' %}<div class="pequeno">Proponente {{ s.proponente.nome|default:"a definir" }} · {{ s.n_estudantes }} estudante{{ s.n_estudantes|pluralize }}</div>{% endif %}
+      <div class="muted pequeno">{% if s.cidade %}{{ s.cidade }}/{{ s.uf }}{% endif %}{% if s.viagem_ida %} · {{ s.viagem_ida|data_br }} a {{ s.viagem_volta|data_br }}{% endif %}</div>
+      {% prazo_prestacao_info s as pp %}{% if pp %}<div class="pequeno {% if pp.atrasada %}erro-campo{% endif %}">{% if pp.atrasada %}Prestação de contas vencida em {{ pp.prazo|data_br }}{% else %}Prestação de contas até {{ pp.prazo|data_br }}{% endif %}</div>{% endif %}
+    </div>
+  </div>
+</a>
+{% empty %}
+<div class="card"><p class="muted">Você ainda não tem solicitações. Clique em “Nova solicitação” para começar.{% if servidor %} Como servidor(a), você é o proponente e inclui os estudantes no pedido.{% endif %}</p></div>
+{% endfor %}
+{% endblock %}

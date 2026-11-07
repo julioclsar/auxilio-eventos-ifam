@@ -1,0 +1,58 @@
+{% extends "auxilio/base.html" %}
+{% block titulo %}Meu perfil{% endblock %}
+{% block conteudo %}
+<a class="btn sec migalha" href="{% url 'inicio' %}" title="Voltar para Minhas solicitações">← Voltar</a>
+<h1>Meu perfil</h1>
+{% if user.perfil.papel == "servidor" %}
+<p class="muted">Quando você é o proponente, estes dados aparecem no Anexo I, no Anexo II e no Anexo VI.</p>
+<form method="post" novalidate data-guardar>{% csrf_token %}
+  {% include "auxilio/_erros_form.html" %}
+  <fieldset><legend>Servidor(a)</legend>
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=form.nome_completo %}
+      {% include "auxilio/_campo.html" with f=form.siape %}
+      {% include "auxilio/_campo.html" with f=form.cargo %}
+      {% include "auxilio/_campo.html" with f=form.telefone %}
+      {% include "auxilio/_campo.html" with f=form.celular %}
+    </div>
+  </fieldset>
+  <div class="linha"><button class="btn" type="submit">Salvar perfil</button>
+    <a class="btn sec" href="{% url 'inicio' %}">Cancelar</a></div>
+</form>
+{% else %}
+<p class="muted">Estes dados preenchem o requerimento padrão do campus e os anexos do edital.</p>
+<form method="post" novalidate data-guardar>{% csrf_token %}
+  {% include "auxilio/_erros_form.html" %}
+  <fieldset><legend>Identificação</legend>
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=form.nome_completo %}
+      {% include "auxilio/_campo.html" with f=form.matricula %}
+      {% include "auxilio/_campo.html" with f=form.cpf %}
+      {% include "auxilio/_campo.html" with f=form.nascimento %}
+      {% include "auxilio/_campo.html" with f=form.rg %}
+      {% include "auxilio/_campo.html" with f=form.rg_uf %}
+      {% include "auxilio/_campo.html" with f=form.rg_expedicao %}
+    </div>
+  </fieldset>
+  <fieldset><legend>Endereço e contato</legend>
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=form.endereco %}
+      {% include "auxilio/_campo.html" with f=form.numero %}
+      {% include "auxilio/_campo.html" with f=form.complemento %}
+      {% include "auxilio/_campo.html" with f=form.bairro %}
+      {% include "auxilio/_campo.html" with f=form.telefone %}
+      {% include "auxilio/_campo.html" with f=form.celular %}
+    </div>
+  </fieldset>
+  <fieldset><legend>Curso</legend>
+    <div class="campos">
+      {% include "auxilio/_campo.html" with f=form.curso %}
+      {% include "auxilio/_campo.html" with f=form.serie_periodo %}
+      {% include "auxilio/_campo.html" with f=form.turno %}
+    </div>
+  </fieldset>
+  <div class="linha"><button class="btn" type="submit">Salvar perfil</button>
+    <a class="btn sec" href="{% url 'inicio' %}">Cancelar</a></div>
+</form>
+{% endif %}
+{% endblock %}

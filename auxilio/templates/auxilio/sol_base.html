@@ -1,0 +1,51 @@
+{% extends "auxilio/base.html" %}
+{% load auxilio_extras %}
+{% block titulo %}Solicitação #{{ sol.codigo }}{% endblock %}
+{% block conteudo %}
+<a class="btn sec migalha" href="{% url 'inicio' %}" title="Voltar para Minhas solicitações">← Voltar</a>
+<div class="card">
+  <div class="cabeca-status">
+    <span class="chip {{ sol.status_classe }}">{{ sol.status_rotulo }}</span>
+    <h1>{{ sol.evento_nome|default:"Nova solicitação" }}</h1>
+    <div class="muted pequeno">Solicitação #{{ sol.codigo }}{% if sol.cidade %} · {{ sol.cidade }}/{{ sol.uf }}{% endif %}{% if sol.viagem_ida %} · viagem de {{ sol.viagem_ida|data_br }} a {{ sol.viagem_volta|data_br }}{% endif %}</div>
+  </div>
+  <div class="etapas">{% etapas sol as lista %}{% for e in lista %}<div class="etapa {{ e.estado }}"{% if e.estado == 'atual' %} aria-current="step"{% endif %}>{{ e.nome }}</div>{% endfor %}</div>
+</div>
+
+<nav class="abas">
+  <a href="{% url 'sol_resumo' sol.pk %}" class="{% if aba == 'resumo' %}ativa{% endif %}"{% if aba == 'resumo' %} aria-current="page"{% endif %}>Resumo</a>
+  <a href="{% url 'sol_dados' sol.pk %}" class="{% if aba == 'dados' %}ativa{% endif %}"{% if aba == 'dados' %} aria-current="page"{% endif %}>1 · Evento{% if not editavel %}{% elif faltas.dados %} <span class="sel erro" title="{{ faltas.dados }} pendência(s)">{{ faltas.dados }}</span>{% else %} <span class="sel ok" title="sem pendências">✓</span>{% endif %}</a>
+  <a href="{% url 'sol_estudantes' sol.pk %}" class="{% if aba == 'estudantes' %}ativa{% endif %}"{% if aba == 'estudantes' %} aria-current="page"{% endif %}>2 · Estudantes{% if not editavel %}{% elif faltas.estudantes %} <span class="sel erro" title="{{ faltas.estudantes }} pendência(s)">{{ faltas.estudantes }}</span>{% else %} <span class="sel ok" title="sem pendências">✓</span>{% endif %}</a>
+  <a href="{% url 'sol_orcamentos' sol.pk %}" class="{% if aba == 'orcamentos' %}ativa{% endif %}"{% if aba == 'orcamentos' %} aria-current="page"{% endif %}>3 · Orçamentos{% if not editavel %}{% elif faltas.orcamentos %} <span class="sel erro" title="{{ faltas.orcamentos }} pendência(s)">{{ faltas.orcamentos }}</span>{% else %} <span class="sel ok" title="sem pendências">✓</span>{% endif %}</a>
+  <a href="{% url 'sol_documentos' sol.pk %}" class="{% if aba == 'documentos' %}ativa{% endif %}"{% if aba == 'documentos' %} aria-current="page"{% endif %}>4 · Documentos{% if not editavel %}{% elif faltas.documentos %} <span class="sel erro" title="{{ faltas.documentos }} pendência(s)">{{ faltas.documentos }}</span>{% else %} <span class="sel ok" title="sem pendências">✓</span>{% endif %}</a>
+  <a href="{% url 'sol_assinaturas' sol.pk %}" class="{% if aba == 'assinaturas' %}ativa{% endif %}"{% if aba == 'assinaturas' %} aria-current="page"{% endif %}>5 · Assinaturas{% if not editavel %}{% elif faltas.assinaturas %} <span class="sel erro" title="{{ faltas.assinaturas }} pendência(s)">{{ faltas.assinaturas }}</span>{% else %} <span class="sel ok" title="sem pendências">✓</span>{% endif %}</a>
+  <a href="{% url 'sol_envio' sol.pk %}" class="{% if aba == 'envio' %}ativa{% endif %}"{% if aba == 'envio' %} aria-current="page"{% endif %}>6 · Envio</a>
+  {% if sol.status == 'paga' or sol.status == 'ag_prestacao' or sol.status == 'prestacao_analise' or sol.status == 'prestacao_pendencia' or sol.status == 'concluida' %}
+  <a href="{% url 'sol_prestacao' sol.pk %}" class="{% if aba == 'prestacao' %}ativa{% endif %}"{% if aba == 'prestacao' %} aria-current="page"{% endif %}>7 · Prestação de contas</a>
+  {% endif %}
+</nav>
+
+{% if desatualizado and editavel %}
+<div class="card" style="border-color:#e0b04a;background:var(--aviso-fundo)">
+  <strong>Os dados mudaram depois de gerar os documentos.</strong>
+  Gere-os novamente na aba “Assinaturas”. As assinaturas anteriores deixam de valer, e um documento alterado
+  precisa ser assinado de novo.
+</div>
+{% endif %}
+
+{% if editavel and pend_aba and aba != 'resumo' and aba != 'envio' %}
+<div class="card pend-aba">
+  <h2>O que falta nesta etapa</h2>
+  <ul class="pend">{% for p in pend_aba %}<li class="{{ p.nivel }}"><span>{{ p.msg }}</span></li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% block corpo %}{% endblock %}
+
+{% if navegacao.anterior or navegacao.seguinte %}
+<nav class="nav-etapas" aria-label="Etapas do pedido">
+  {% if navegacao.anterior %}<a class="btn sec" href="{{ navegacao.anterior.url }}">← {{ navegacao.anterior.nome }}</a>{% else %}<span></span>{% endif %}
+  {% if navegacao.seguinte %}<a class="btn sec" href="{{ navegacao.seguinte.url }}">{{ navegacao.seguinte.nome }} →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

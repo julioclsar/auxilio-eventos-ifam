@@ -1,0 +1,16 @@
+{% extends "auxilio/base.html" %}
+{% block titulo %}Entrar{% endblock %}
+{% block conteudo %}
+{% load static %}<div class="login card">
+  <img class="selo" src="{% static 'auxilio/ifam-selo.png' %}" alt="Instituto Federal do Amazonas">
+  <h1>Entrar</h1>
+  <p class="muted">Sistema de solicitação do Auxílio Estudantil para Participação em Eventos Acadêmicos (Edital 03/2026/PROEN/IFAM).</p>
+  <form method="post">{% csrf_token %}
+    {% if form.errors %}<p class="erro-campo">E-mail ou senha incorretos.</p>{% endif %}
+    <div class="campo"><label for="id_username">E-mail institucional</label>{{ form.username }}</div>
+    <div class="campo" style="margin-top:.7rem"><label for="id_password">Senha</label>{{ form.password }}</div>
+    <p style="margin-top:1rem"><button class="btn" type="submit">Entrar</button></p>
+  </form>
+  <p class="pequeno muted">Ainda não tem conta? <a href="{% url 'cadastro' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}">Criar conta</a></p>
+</div>
+{% endblock %}

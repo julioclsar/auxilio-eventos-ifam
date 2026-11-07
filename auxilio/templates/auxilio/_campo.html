@@ -1,0 +1,10 @@
+{% load auxilio_extras %}{% with alerta=pend_campo|pega:f.name %}
+<div class="campo{% if f.field.widget.input_type == 'checkbox' %} cheque{% endif %}{% if larga %} larga{% endif %}{% if f.errors or alerta.nivel == 'erro' %} com-erro{% endif %}">
+  {% if f.field.widget.input_type == 'checkbox' %}
+    {{ f }}<label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required or f.field.obrig_envio %} <span class="obrig" title="Obrigatório" aria-hidden="true">*</span><span class="sr-only"> (obrigatório)</span>{% endif %}</label>
+  {% else %}
+    <label for="{{ f.id_for_label }}">{{ f.label }}{% if f.field.required or f.field.obrig_envio %} <span class="obrig" title="Obrigatório" aria-hidden="true">*</span><span class="sr-only"> (obrigatório)</span>{% endif %}{% if f.field.nota_rotulo %} <span class="nota-rotulo">{{ f.field.nota_rotulo }}</span>{% endif %}</label>{{ f }}
+  {% endif %}
+  {% if f.help_text %}<div class="ajuda">{{ f.help_text }}</div>{% endif %}
+  {% for e in f.errors %}<div class="erro-campo" role="alert">{{ e }}</div>{% empty %}{% if alerta %}<div class="{% if alerta.nivel == 'erro' %}erro-campo{% else %}aviso-campo{% endif %}">{{ alerta.msg }}</div>{% endif %}{% endfor %}
+</div>{% endwith %}

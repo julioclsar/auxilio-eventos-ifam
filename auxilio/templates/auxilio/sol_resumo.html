@@ -1,0 +1,62 @@
+{% extends "auxilio/sol_base.html" %}
+{% load auxilio_extras %}
+{% block corpo %}
+{% if proximo %}
+<div class="card destaque">
+  <div class="linha entre">
+    <div><strong>Próximo passo</strong><div>{{ proximo.texto }}</div>{% if proximo.detalhe %}<div class="muted pequeno">{{ proximo.detalhe }}</div>{% endif %}</div>
+    <a class="btn" href="{% if proximo.passo == 'dados' %}{% url 'sol_dados' sol.pk %}{% elif proximo.passo == 'estudantes' %}{% url 'sol_estudantes' sol.pk %}{% elif proximo.passo == 'orcamentos' %}{% url 'sol_orcamentos' sol.pk %}{% elif proximo.passo == 'documentos' %}{% url 'sol_documentos' sol.pk %}{% elif proximo.passo == 'perfil' %}{% url 'perfil' %}{% elif proximo.passo == 'envio' %}{% url 'sol_envio' sol.pk %}{% else %}{% url 'sol_assinaturas' sol.pk %}{% endif %}">Continuar</a>
+  </div>
+</div>
+{% elif sol.status == 'indeferida' %}
+<div class="card" style="border-color:var(--erro)">
+  <strong>Solicitação indeferida.</strong>
+  <p>{{ sol.decisao_justificativa }}</p>
+  {% if prazo_recurso %}<p>Você pode interpor um único recurso até <strong>{{ prazo_recurso|data_br }}</strong> (2 dias úteis, item 8.2).</p>
+  <a class="btn" href="{% url 'sol_envio' sol.pk %}">Interpor recurso</a>{% endif %}
+</div>
+{% elif prazo_prestacao and sol.status == 'paga' %}
+<div class="card destaque"><strong>Pagamento registrado.</strong>
+  Depois do evento, a prestação de contas vence em <strong>{{ prazo_prestacao|data_br }}</strong> (30 dias).
+  <p><a class="btn" href="{% url 'sol_envio' sol.pk %}">Abrir prestação de contas</a></p></div>
+{% endif %}
+
+<div class="card">
+  <h2>Valores</h2>
+  {% include "auxilio/_valores.html" %}
+  {% if r.acima_do_teto %}<p class="erro-campo">Acima do teto de {{ r.teto|brl }} por proposta (5% do valor global).</p>{% endif %}
+</div>
+
+<div class="grade2">
+  <div class="card">
+    <h2>Pendências e avisos</h2>
+    {% if pendencias %}{% include "auxilio/_pendencias.html" with lista=pendencias %}
+    {% else %}<p class="muted">Nenhuma pendência. Tudo certo por aqui.</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Checklist de documentos</h2>
+    {% for i in checklist %}
+    <div class="item">
+      <div class="marca {% if i.ok %}ok{% elif i.obrigatorio %}falta{% endif %}">{% if i.ok %}✓{% elif i.obrigatorio %}!{% else %}·{% endif %}</div>
+      <div class="corpo"><div>{{ i.rotulo }}{% if not i.obrigatorio %} <span class="chip cinza">recomendado</span>{% endif %}</div>
+        <div class="muted pequeno">{{ i.ref }}{% if i.detalhe %} · {{ i.detalhe }}{% endif %}</div></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if editavel %}
+<div class="card">
+  <h2>Descartar esta solicitação</h2>
+  <p class="muted pequeno">Apaga os dados, os orçamentos e os arquivos desta solicitação. Só é possível antes do envio ao Protocolo.</p>
+  <form method="post" action="{% url 'sol_excluir' sol.pk %}" data-confirmar="Excluir esta solicitação e todos os arquivos dela? Não dá para desfazer.">{% csrf_token %}<button class="btn perigo-sec" type="submit">Excluir solicitação</button></form>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Histórico</h2>
+  <table>
+    {% for h in historico %}<tr><td class="pequeno muted" style="width:11rem">{{ h.em|hora_br }}</td><td>{{ h.texto }}</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

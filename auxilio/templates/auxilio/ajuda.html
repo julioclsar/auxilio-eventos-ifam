@@ -1,0 +1,31 @@
+{% extends "auxilio/base.html" %}
+{% block titulo %}Ajuda{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h1>Como funciona</h1>
+  <p class="muted">Este sistema prepara a sua solicitação do Auxílio Estudantil para Participação em Eventos Acadêmicos{% if edital %} (Edital {{ edital.numero }}){% endif %}. Ele não assina nada e não envia e-mail. Você assina e envia, o sistema organiza e confere.</p>
+  <ol class="passos">
+    <li><strong>Perfil.</strong> Crie a conta como estudante ou servidor(a) e preencha seus dados uma vez só.</li>
+    <li><strong>Proponente.</strong> É quem faz o pedido e é o mesmo em todo o processo. Pode ser o próprio estudante ou um(a) servidor(a), como o(a) orientador(a) (item 7.1). Um servidor pode criar o pedido com a conta dele, ou um estudante pode preencher e indicar o servidor, que assina por e-mail.</li>
+    <li><strong>Estudantes.</strong> De 1 a 12 por pedido (Anexo II), todos com o mesmo valor (item 4.3). Cada colega pode ser convidado por link para enviar as próprias declarações e documentos (o convite só vale para a conta com o e-mail que o proponente informou), ou o proponente preenche por ele.</li>
+    <li><strong>Evento.</strong> Nome, cidade, datas e o que você está pedindo. Se deixar ida e retorno em branco, o sistema usa um dia antes e um dia depois do evento.</li>
+    <li><strong>Orçamentos.</strong> Três orçamentos com comprovante para cada trecho de passagem e para a hospedagem. Vale o menor de cada trecho.</li>
+    <li><strong>Documentos.</strong> Folder do evento, carta de aceite, histórico, RG e CPF e o Nada Consta. O Nada Consta é pedido por e-mail ao Serviço Social, o sistema escreve o rascunho.</li>
+    <li><strong>Assinaturas.</strong> O sistema gera o requerimento e os Anexos I, II e III. Você baixa, assina no gov.br e envia de volta.</li>
+    <li><strong>Diretor-Geral.</strong> O Anexo I é o único que o Diretor assina, por cima da sua assinatura. O sistema escreve o e-mail. Quando ele devolver assinado, envie o PDF aqui.</li>
+    <li><strong>PDF único e Protocolo.</strong> O sistema junta tudo em um PDF. Você envia ao Protocolo do campus e registra o número do processo.</li>
+    <li><strong>Depois.</strong> Acompanhe análise e resultado. Se for aprovado, faça a prestação de contas em até 30 dias após o evento. Você escreve os resultados no Anexo VI, o(a) coordenador(a) assina atestando e você anexa certificado, passagens e recibo da hospedagem.</li>
+  </ol>
+</div>
+<div class="card">
+  <h2>Dúvidas comuns</h2>
+  <details><summary>Como assino um PDF?</summary><p>Pelo assinador do gov.br (assinador.iti.br). Abra o PDF gerado, assine e salve o arquivo assinado. Envie esse arquivo de volta no sistema.</p></details>
+  <details><summary>Mudei um dado e os documentos ficaram desatualizados. E agora?</summary><p>Gere os documentos de novo na aba Assinaturas. As assinaturas anteriores deixam de valer, então assine de novo.</p></details>
+  <details><summary>Como o valor da alimentação é calculado?</summary><p>R$ 150,00 por dia, com meia-diária (R$ 75,00) no dia da ida e no dia da volta. Viagem de 18 a 23 dá 75 + 4 x 150 + 75 = R$ 750,00.</p></details>
+  <details><summary>O que é o número em vermelho nas abas?</summary><p>É a quantidade de pendências daquela etapa. Quando fica verde com um visto, a etapa está em dia.</p></details>
+  <details><summary>Posso desistir?</summary><p>Sim. Antes de enviar ao Protocolo, exclua a solicitação na aba Resumo. Depois do envio, use "Não vou mais participar" na aba Envio. Se o auxílio ainda não foi pago, o sistema escreve o pedido de suspensão à Direção-Geral. Se já foi pago, o valor volta por GRU, e novas solicitações ficam bloqueadas até a devolução ser confirmada (itens 10.4 e 10.5).</p></details>
+  <details><summary>Quem recebe meus dados?</summary><p>Quem preenche o pedido vê os dados de todos os estudantes dele. Um colega convidado vê só os próprios documentos. O Diretor-Geral recebe apenas o Anexo I.</p></details>
+  <details><summary>E se só um colega desistir?</summary><p>O pedido continua para os outros. Na aba Envio (ou na página dele, se tiver conta), registre a desistência daquele estudante. Antes do pagamento, ele sai do valor a pagar e a Direção-Geral suspende a parte dele. Depois do pagamento, ele devolve só a própria parte por GRU, e a Direção-Geral ou o DAES confirma. Desistência registrada por engano pode ser desfeita enquanto nenhuma GRU foi enviada. O(a) estudante proponente não sai sozinho(a).</p></details>
+  <details><summary>E se um servidor for junto?</summary><p>Marque "Um servidor vai junto na viagem" nos dados do evento. Entram o termo de responsabilidade do servidor (Anexo IV) e o do Diretor-Geral (Anexo V). Isso vale tanto quando o proponente é estudante quanto quando é servidor.</p></details>
+</div>
+{% endblock %}

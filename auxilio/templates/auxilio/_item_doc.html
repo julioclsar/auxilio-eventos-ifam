@@ -1,0 +1,19 @@
+{% load auxilio_extras %}<div class="item" id="doc-{{ i.codigo }}{% if i.participante %}-{{ i.participante.pk }}{% endif %}">
+  <div class="marca {% if i.ok %}ok{% elif i.obrigatorio %}falta{% endif %}">{% if i.ok %}✓{% else %}!{% endif %}</div>
+  <div class="corpo">
+    <div><strong>{{ i.rotulo }}</strong> {% if not i.obrigatorio %}<span class="chip cinza">recomendado</span>{% endif %}</div>
+    <div class="muted pequeno">{{ i.ref }}{% if i.detalhe %} · {{ i.detalhe }}{% endif %}</div>
+    {% if i.doc %}<div class="pequeno">Enviado: <a href="{% url 'baixar' i.doc.pk %}" target="_blank">{{ i.doc.nome_original }}</a> · {{ i.doc.criado_em|hora_br }}
+      {% if i.doc.verificacao.resumo %}<br><span class="muted">{{ i.doc.verificacao.resumo }}</span>{% endif %}</div>{% endif %}
+    {% if editavel %}
+    <form class="upload" method="post" enctype="multipart/form-data" {% if acao_upload %}action="{{ acao_upload }}"{% endif %}>{% csrf_token %}
+      {% if modo_participacao %}<input type="hidden" name="acao" value="documento">{% endif %}
+      <input type="hidden" name="tipo" value="{{ i.codigo }}">
+      {% if i.participante and not modo_participacao %}<input type="hidden" name="participante" value="{{ i.participante.pk }}">{% endif %}
+      <input type="file" name="arquivo" required>
+      <button class="btn sec mini" type="submit">{% if i.doc %}Substituir{% else %}Enviar{% endif %}</button>
+      {% if i.modelo %}<a class="pequeno" href="{% url 'baixar_modelo' i.modelo %}">Baixar modelo (.docx)</a>{% endif %}
+    </form>
+    {% endif %}
+  </div>
+</div>

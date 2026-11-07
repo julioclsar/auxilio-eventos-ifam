@@ -1,0 +1,40 @@
+{% extends "auxilio/base.html" %}
+{% load auxilio_extras %}
+{% block titulo %}Anexo I · {{ sol.proponente.nome }}{% endblock %}
+{% block conteudo %}
+<a class="btn sec migalha" href="{% url 'diretor_lista' %}" title="Voltar para Assinaturas">← Voltar</a>
+<div class="card">
+  <h1>Anexo I · {{ sol.proponente.nome }}</h1>
+  <p class="muted">Solicitação #{{ sol.codigo }} · {{ sol.evento_nome }} · {{ sol.cidade }}/{{ sol.uf }} · {{ sol.viagem_ida|data_br }} a {{ sol.viagem_volta|data_br }}</p>
+  {% include "auxilio/_valores.html" %}
+</div>
+
+<div class="card {% if pode_assinar %}destaque{% endif %}">
+  <h2>Assinatura do Diretor-Geral</h2>
+  {% if ass.estado == 'assinado' %}
+    <p><span class="chip">Assinado em {{ ass.assinado_em|hora_br }}</span> <span class="muted pequeno">{{ ass.nota }}</span></p>
+    {% if doc %}<a class="btn sec" href="{% url 'baixar' doc.pk %}" target="_blank">Ver Anexo I assinado</a>{% endif %}
+  {% elif pode_assinar %}
+    <ol class="passos">
+      <li>Baixe o Anexo I, que já traz a assinatura do proponente.</li>
+      <li>Assine com o assinador institucional (Serpro) ou o gov.br, mantendo a assinatura anterior.</li>
+      <li>Envie o PDF assinado aqui. O sistema o encaminha para o próximo passo.</li>
+    </ol>
+    {% if doc %}<p><a class="btn sec" href="{% url 'baixar' doc.pk %}" target="_blank">Baixar Anexo I</a></p>{% endif %}
+    <form class="upload" method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="acao" value="assinado">
+      <input type="file" name="arquivo" accept="application/pdf" required><button class="btn" type="submit">Enviar assinado</button></form>
+  {% else %}
+    <p class="muted">O estudante ainda não enviou o Anexo I assinado.</p>
+  {% endif %}
+</div>
+
+{% if pode_assinar %}
+<div class="card">
+  <h2>Devolver para correção</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="acao" value="devolver">
+    <div class="campo"><label for="nota">Motivo</label><textarea id="nota" name="nota" rows="3" required></textarea></div>
+    <p style="margin-top:.75rem"><button class="btn sec" type="submit">Devolver ao estudante</button></p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,141 @@
+{% load static auxilio_extras %}<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Auxílio para eventos{% endblock %} · IFAM</title>
+  <link rel="icon" type="image/png" href="{% static 'auxilio/favicon.png' %}">
+  <link rel="stylesheet" href="{% static 'auxilio/app.css' %}?v={% versao_estatico 'auxilio/app.css' %}">
+</head>
+<body>
+  <header class="topo">
+    <div class="dentro">
+      <a class="marca" href="{% url 'inicio' %}"><span class="logo"><img src="{% static 'auxilio/ifam-logo.png' %}" alt="Instituto Federal do Amazonas"></span><span>Auxílio para eventos acadêmicos</span></a>
+      <span class="espaco"></span>
+      {% if user.is_authenticated %}
+        {% with papel=user.perfil.papel nome_url=request.resolver_match.url_name %}
+        <a href="{% url 'ajuda' %}" class="icone-ajuda" title="Ajuda" aria-label="Ajuda"{% if nome_url == 'ajuda' %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.2 9.2a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.4-2.8 4.1" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.3" fill="currentColor"/></svg></a>
+        <span class="divisor" aria-hidden="true"></span>
+        {% if papel == "diretor" %}<a href="{% url 'diretor_lista' %}" class="quem"{% if nome_url == 'diretor_lista' %} aria-current="page"{% endif %}>Assinaturas</a>
+        {% elif papel == "analista" %}<a href="{% url 'analise_lista' %}" class="quem"{% if nome_url == 'analise_lista' %} aria-current="page"{% endif %}>Solicitações</a>
+        {% else %}<a href="{% url 'inicio' %}" class="quem"{% if nome_url == 'inicio' %} aria-current="page"{% endif %}>Minhas solicitações</a>{% endif %}
+        <span class="divisor" aria-hidden="true"></span>
+        <span class="conta">
+          {% if papel == "aluno" or papel == "servidor" %}<a href="{% url 'perfil' %}" class="quem"{% if nome_url == 'perfil' %} aria-current="page"{% endif %}>Meu perfil</a>
+          <span class="divisor" aria-hidden="true"></span>{% endif %}
+          <form method="post" action="{% url 'sair' %}">{% csrf_token %}<button type="submit" class="sair">Sair</button></form>
+        </span>
+        {% endwith %}
+      {% else %}
+        {% with nome_url=request.resolver_match.url_name %}<a href="{% url 'ajuda' %}" class="icone-ajuda" title="Ajuda" aria-label="Ajuda"{% if nome_url == 'ajuda' %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.2 9.2a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.4-2.8 4.1" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.3" fill="currentColor"/></svg></a>{% endwith %}
+      {% endif %}
+    </div>
+  </header>
+  <main>
+    {% if messages %}<ul class="msgs" role="status">{% for m in messages %}<li class="{{ m.level_tag }}"{% if m.extra_tags|slice:":5" == "alvo:" %} data-alvo="{{ m.extra_tags|slice:"5:" }}"{% endif %}>{{ m }}</li>{% endfor %}</ul>{% endif %}
+    {% block conteudo %}{% endblock %}
+  </main>
+<script>
+  // Máscara enquanto digita: aceita só números ou com parênteses, e mostra no formato certo.
+  function reais(texto) {
+    var s = String(texto || "").replace(/R\$|\s/g, "");
+    if (!s) return "";
+    if (s.indexOf(",") >= 0) s = s.replace(/\./g, "").replace(",", ".");
+    else if ((s.match(/\./g) || []).length > 1 || /^\d{1,3}\.\d{3}$/.test(s)) s = s.replace(/\./g, "");
+    var n = Number(s);
+    return isNaN(n) ? texto : n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  document.addEventListener("focusout", function (e) {
+    if (e.target.dataset && e.target.dataset.mascara === "reais") e.target.value = reais(e.target.value);
+  });
+  function mascarar(campo) {
+    if (campo.dataset.mascara === "reais") { campo.value = campo.value.replace(/[^\d.,]/g, ""); return; }
+    if (campo.dataset.mascara === "inteiro") { campo.value = campo.value.replace(/\D/g, ""); return; }
+    var d = campo.value.replace(/\D/g, "");
+    if (campo.dataset.mascara === "cpf") {
+      d = d.slice(0, 11);
+      campo.value = d.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+    } else if (campo.dataset.mascara === "telefone") {
+      d = d.slice(0, 11);
+      if (d.length > 10) campo.value = d.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+      else if (d.length > 6) campo.value = d.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
+      else if (d.length > 2) campo.value = d.replace(/(\d{2})(\d*)/, "($1) $2");
+      else campo.value = d;
+    }
+  }
+  document.addEventListener("input", function (e) {
+    if (e.target.dataset && e.target.dataset.mascara) mascarar(e.target);
+    var w = e.target.closest && e.target.closest(".campo.com-erro");
+    if (w && String(e.target.value || "").trim()) w.classList.remove("com-erro");
+  });
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("[data-mascara]").forEach(mascarar);
+    // Leva o foco ao primeiro campo com erro só depois de uma tentativa de salvar que falhou.
+    var erro = document.querySelector(".resumo-erros") &&
+      document.querySelector(".campo.com-erro input, .campo.com-erro select, .campo.com-erro textarea");
+    if (erro) { erro.focus(); }
+    // Em tela estreita as abas rolam para o lado: mostra a aba aberta.
+    var ativa = document.querySelector(".abas a.ativa");
+    if (ativa) { ativa.parentNode.scrollLeft = ativa.offsetLeft - 16; }
+    // Avisa antes de sair da página com alterações não salvas.
+    document.querySelectorAll("form[data-guardar]").forEach(function (f) {
+      var mudou = false, enviando = false;
+      f.addEventListener("input", function () { mudou = true; });
+      f.addEventListener("change", function () { mudou = true; });
+      f.addEventListener("submit", function () { enviando = true; });
+      window.addEventListener("beforeunload", function (e) {
+        if (mudou && !enviando) { e.preventDefault(); e.returnValue = ""; }
+      });
+    });
+  });
+  // Antes de enviar: campos obrigatórios vazios ficam em vermelho e o envio para.
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    if (!f.hasAttribute("novalidate")) return;
+    var vazios = Array.prototype.filter.call(f.querySelectorAll("[required]"), function (c) {
+      return c.type === "checkbox" ? false : !String(c.value || "").trim();
+    });
+    if (vazios.length) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      vazios.forEach(function (c) { var w = c.closest(".campo"); if (w) w.classList.add("com-erro"); });
+      var r = f.querySelector(".resumo-erros");
+      if (!r) { r = document.createElement("div"); r.className = "resumo-erros"; r.setAttribute("role", "alert"); f.insertBefore(r, f.firstChild.nextSibling); }
+      r.innerHTML = "<strong>Faltam campos obrigatórios.</strong> Preencha " + (vazios.length === 1 ? "o campo destacado" : "os " + vazios.length + " campos destacados") + " em vermelho.";
+      vazios[0].focus();
+    }
+  }, true);
+  // Ao enviar um formulário, guarda em qual item ele está, para voltar a ele depois de salvar.
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    if ((f.method || "").toLowerCase() !== "post" || f.querySelector('input[name="alvo"]')) return;
+    var item = f.closest("main [id]");
+    if (!item) return;
+    var h = document.createElement("input");
+    h.type = "hidden"; h.name = "alvo"; h.value = item.id; f.appendChild(h);
+  });
+  // O aviso de um item aparece dentro dele, e a tela fica nele em vez de subir para o topo.
+  document.addEventListener("DOMContentLoaded", function () {
+    var lista = document.querySelector("ul.msgs"), primeiro = null;
+    document.querySelectorAll("ul.msgs li[data-alvo]").forEach(function (li) {
+      var item = document.getElementById(li.dataset.alvo);
+      if (!item) return;
+      var aviso = document.createElement("div");
+      aviso.className = "aviso-item " + li.className; aviso.setAttribute("role", "status"); aviso.textContent = li.textContent;
+      (item.querySelector(":scope > .corpo") || item).appendChild(aviso); li.remove(); primeiro = primeiro || item;
+    });
+    if (lista && !lista.children.length) lista.remove();
+    if (primeiro) primeiro.scrollIntoView({ block: "center" });
+  });
+  // Confirmação antes de ações que apagam, e aviso de "aguarde" nas que demoram (geração de PDF).
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    if (f.dataset.confirmar && !window.confirm(f.dataset.confirmar)) { e.preventDefault(); return; }
+    if (f.classList.contains("lento")) {
+      var b = f.querySelector("button[type=submit]");
+      if (b) { setTimeout(function () { b.disabled = true; b.textContent = "Gerando, aguarde alguns segundos…"; }, 0); }
+    }
+  });
+</script>
+</body>
+</html>
