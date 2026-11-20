@@ -98,21 +98,25 @@ def protocolo(sol):
 
 
 def prestacao(sol):
-    """Item 10.3: o relatório e as comprovações vão para o processo original no SIPAC, pelo Protocolo."""
+    """Item 10.3: o relatório e as comprovações entram no processo originário, no SIPAC. Como esse processo já
+    foi aberto no pedido (protocolado antes do evento), a juntada vai direto aos setores responsáveis, sem passar
+    pelo Protocolo de novo. Se o campus não tiver e-mail de CCFC/DGPOS cadastrado, cai no e-mail do Protocolo."""
     p, c, e = sol.perfil, sol.campus, sol.edital
     processo = sol.numero_processo or "(informe o número do processo)"
     assunto = f"Prestação de contas – Processo nº {processo} – {sol.proponente['nome']}"
     corpo = (
-        "Prezados(as) do Protocolo,\n\n"
+        "Prezados(as),\n\n"
         f"Encaminho a prestação de contas do Auxílio Estudantil para Participação em Eventos Acadêmicos "
         f"(Edital nº {e.numero}), referente ao evento {sol.evento_nome}, e peço a juntada ao processo nº {processo}, "
-        "conforme o item 10.3 do edital.\n\n"
+        "já em andamento, conforme o item 10.3 do edital.\n\n"
         "Segue em anexo, em PDF único, o Relatório de Prestação de Contas (Anexo VI) assinado e as comprovações "
         "da participação.\n\n"
         f"Atenciosamente,\n{_quem(sol)}"
     )
-    return {"para": c.email_protocolo, "cc": "", "assunto": assunto, "corpo": corpo,
-            "mailto": mailto(c.email_protocolo, assunto, corpo), "gmail": gmail(c.email_protocolo, assunto, corpo)}
+    para = c.email_ccfc or c.email_protocolo
+    cc = c.email_dgpos if c.email_ccfc else ""
+    return {"para": para, "cc": cc, "assunto": assunto, "corpo": corpo,
+            "mailto": mailto(para, assunto, corpo, cc), "gmail": gmail(para, assunto, corpo, cc)}
 
 
 def _quem_desiste(estudante, por_si):

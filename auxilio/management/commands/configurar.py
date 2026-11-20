@@ -20,6 +20,8 @@ class Command(BaseCommand):
         parser.add_argument("--email-protocolo", default="protocolo.cmzl@ifam.edu.br")
         parser.add_argument("--email-servico-social", default="servicosocial.cmzl@ifam.edu.br")
         parser.add_argument("--email-servico-social-cc", default="jose.nascimento@ifam.edu.br")
+        parser.add_argument("--email-ccfc", default="ccfc.cmzl@ifam.edu.br")
+        parser.add_argument("--email-dgpos", default="dgpos.cmzl@ifam.edu.br")
 
     def handle(self, *args, **o):
         campus, novo = Campus.objects.update_or_create(
@@ -28,7 +30,8 @@ class Command(BaseCommand):
                           diretor_nome=o["diretor"], email_diretor=o["email_diretor"],
                           email_protocolo=o["email_protocolo"],
                           email_servico_social=o["email_servico_social"],
-                          email_servico_social_cc=o["email_servico_social_cc"]))
+                          email_servico_social_cc=o["email_servico_social_cc"],
+                          email_ccfc=o["email_ccfc"], email_dgpos=o["email_dgpos"]))
         Edital.objects.get_or_create(
             numero=regras.EDITAL_03_2026["numero"],
             defaults=dict(titulo=regras.EDITAL_03_2026["titulo"], regras=regras.EDITAL_03_2026))

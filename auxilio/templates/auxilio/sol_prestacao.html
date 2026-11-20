@@ -16,11 +16,11 @@
 {% if prestacao_pdf and sol.status != 'ag_prestacao' %}
 <div class="card {% if sol.status == 'prestacao_analise' %}destaque{% endif %}" id="enviar-ao-processo-no-sipac">
   <h2>Enviar ao processo no SIPAC</h2>
-  <p class="muted pequeno">O relatório e as comprovações entram no processo original da solicitação (item 10.3). Envie o PDF único ao Protocolo pedindo a juntada{% if sol.numero_processo %} ao processo {{ sol.numero_processo }}{% endif %}.</p>
+  <p class="muted pequeno">O relatório e as comprovações entram no processo original da solicitação (item 10.3), por e-mail aos setores responsáveis pela juntada{% if sol.numero_processo %} ao processo {{ sol.numero_processo }}{% endif %}, sem passar pelo Protocolo de novo.</p>
   <p><a class="btn sec" href="{% url 'baixar' prestacao_pdf.pk %}" target="_blank">Baixar o PDF único da prestação ({{ prestacao_pdf.verificacao.paginas }} páginas)</a></p>
   {% if email_prestacao %}
   <div class="rascunho-email" id="corpo-prest">{{ email_prestacao.corpo }}</div>
-  <p class="pequeno muted" style="margin-top:.4rem">Para {{ email_prestacao.para }} · Assunto {{ email_prestacao.assunto }}</p>
+  <p class="pequeno muted" style="margin-top:.4rem">Para {{ email_prestacao.para }}{% if email_prestacao.cc %} · cópia {{ email_prestacao.cc }}{% endif %} · Assunto {{ email_prestacao.assunto }}</p>
   <div class="linha" style="margin-top:.4rem">
     <a class="btn sec mini" href="{{ email_prestacao.gmail }}&authuser={{ user.email|urlencode }}" target="_blank" rel="noopener">Abrir no Gmail</a>
     <button class="btn sec mini" type="button" onclick="navigator.clipboard.writeText(document.getElementById('corpo-prest').innerText)">Copiar texto</button>

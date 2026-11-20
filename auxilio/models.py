@@ -23,6 +23,10 @@ class Campus(models.Model):
     email_protocolo = models.EmailField()
     email_servico_social = models.EmailField()
     email_servico_social_cc = models.EmailField(blank=True)
+    # Setores que recebem a prestação de contas direto, sem passar pelo Protocolo, quando o
+    # processo da solicitação já está aberto (item 10.3): só a juntada aos documentos existentes.
+    email_ccfc = models.EmailField("E-mail da Coordenação de Contabilidade, Finanças e Custos", blank=True)
+    email_dgpos = models.EmailField("E-mail do Departamento de Ensino de Graduação e Pós-graduação", blank=True)
 
     def __str__(self):
         return f"{self.nome} ({self.sigla})"

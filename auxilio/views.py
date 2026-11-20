@@ -727,7 +727,7 @@ def sol_prestacao(request, pk):
                     raise ValidationError("Pendências: " + " ".join(faltas))
                 dossie.montar_prestacao(sol, request.user)
                 fluxo.mudar_status(sol, "prestacao_analise", request.user, "Prestação de contas enviada.")
-                messages.success(request, "Prestação pronta. Envie o PDF único ao Protocolo com o e-mail abaixo.")
+                messages.success(request, "Prestação pronta. Envie o PDF único com o e-mail abaixo.")
         except ValidationError as e:
             messages.error(request, "; ".join(e.messages))
         except KeyError:

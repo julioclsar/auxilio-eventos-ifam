@@ -41,7 +41,8 @@ def criar(docs=True):
                           diretor_nome="David Washington Freitas Lima",
                           email_diretor="david.lima@ifam.edu.br",
                           email_protocolo="protocolo.cmzl@ifam.edu.br",   # CONFIRMAR com o campus
-                          email_servico_social="servicosocial.cmzl@ifam.edu.br"))
+                          email_servico_social="servicosocial.cmzl@ifam.edu.br",
+                          email_ccfc="ccfc.cmzl@ifam.edu.br", email_dgpos="dgpos.cmzl@ifam.edu.br"))
         edital, _ = Edital.objects.get_or_create(
             numero=regras.EDITAL_03_2026["numero"],
             defaults=dict(titulo=regras.EDITAL_03_2026["titulo"], regras=regras.EDITAL_03_2026))

@@ -148,6 +148,27 @@ class FluxoCompleto(TestCase):
     def aluno_user(self):
         return User.objects.get(username="aluno")
 
+    def test_prestacao_vai_para_ccfc_e_dgpos_sem_passar_pelo_protocolo(self):
+        """Item 10.3: o processo já existe (foi protocolado no pedido), então a juntada vai direto aos
+        setores, sem repetir o Protocolo (confirmado pelo DGPOS da CMZL em 2026-11-17)."""
+        from auxilio.services import emails
+        self.sol.numero_processo = "23857.002378/2026-10"
+        self.sol.save(update_fields=["numero_processo"])
+        email = emails.prestacao(self.sol)
+        self.assertEqual(email["para"], "ccfc.cmzl@ifam.edu.br")
+        self.assertEqual(email["cc"], "dgpos.cmzl@ifam.edu.br")
+        self.assertIn("23857.002378/2026-10", email["assunto"])
+        self.assertIn("23857.002378/2026-10", email["corpo"])
+        self.assertNotIn("Protocolo", email["corpo"])
+
+    def test_prestacao_cai_no_protocolo_se_ccfc_nao_configurado(self):
+        from auxilio.services import emails
+        self.sol.campus.email_ccfc = ""
+        self.sol.campus.email_dgpos = ""
+        email = emails.prestacao(self.sol)
+        self.assertEqual(email["para"], self.sol.campus.email_protocolo)
+        self.assertEqual(email["cc"], "")
+
     # ------------------------------------------------------------ fluxo inteiro
     def test_fluxo_do_rascunho_a_conclusao(self):
         sol, pk = self.sol, self.sol.pk
