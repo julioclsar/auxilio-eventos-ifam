@@ -28,7 +28,7 @@ Segue o Design System Institucional do IFAM (versão 2), com a logo oficial no c
 5. O Anexo I é o único que o Diretor-Geral assina. O sistema monta o e-mail para ele. Quando ele devolve o PDF assinado, o estudante envia aqui.
 6. Só então o dossiê é liberado. O estudante envia o PDF único ao Protocolo e registra o número do processo.
 7. Acompanhamento da análise e do recurso. O recurso só é aceito dentro de 2 dias úteis (item 8.2).
-8. Prestação de contas, que abre depois do fim do evento. O estudante informa o coordenador e os resultados, que entram no Anexo VI, envia para o coordenador assinar atestando, anexa as comprovações (vários arquivos por item) e o sistema monta o PDF único da prestação com o e-mail ao Protocolo pedindo a juntada ao processo no SIPAC (item 10.3).
+8. Prestação de contas, que abre depois do fim do evento. O estudante informa o coordenador e os resultados, que entram no Anexo VI, envia para o coordenador assinar atestando, anexa as comprovações (vários arquivos por item) e o sistema monta o PDF único da prestação com o e-mail ao CCFC, com cópia ao DGPOS, pedindo a juntada ao processo no SIPAC (item 10.3).
 9. Desistência (item 10.4). Antes do pagamento, cancela e gera o e-mail de suspensão à Direção-Geral. Depois do pagamento, abre a devolução por GRU, com e-mail pedindo a guia, envio do comprovante e confirmação pelo analista.
 10. Bloqueios. GRU pendente (item 10.5) ou prestação de contas vencida (item 10.6) impedem nova solicitação até a regularização.
 
